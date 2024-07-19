@@ -17,7 +17,7 @@ class TapNetsuiteSuiteQL(Tap):
     config_jsonschema = th.PropertiesList(
         th.Property(
             "realm",
-            th.StringType,
+            th.IntegerType,
             required=True,
         ),
         th.Property(
@@ -54,6 +54,7 @@ class TapNetsuiteSuiteQL(Tap):
         """
         return [
             streams.ArrHistoryStream(self),
+            streams.TransactionLineStream(self)
         ]
 
 
