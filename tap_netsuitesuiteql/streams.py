@@ -45,6 +45,10 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
             "enduser_id",
             th.IntegerType,
         ),
+        th.Property(
+            "enduser_sfid",
+            th.StringType,
+        ),
         th.Property("so_tranid", th.StringType),
         th.Property("so_currency", th.IntegerType),
         th.Property("so_exchange_rate", th.NumberType),
