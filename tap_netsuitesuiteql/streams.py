@@ -45,6 +45,10 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
             "enduser_id",
             th.IntegerType,
         ),
+        th.Property(
+            "enduser_sfid",
+            th.StringType,
+        ),
         th.Property("so_tranid", th.StringType),
         th.Property("so_currency", th.IntegerType),
         th.Property("so_exchange_rate", th.NumberType),
@@ -57,6 +61,24 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
         th.Property("enduser_parent_sfid", th.StringType),
         th.Property("enduser_grandparent_sfid", th.StringType),
         th.Property("subsidiary_exchange_rate", th.NumberType),
+
+    ).to_dict()
+
+
+class EndusersStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "endusers"
+    path = ""
+    primary_keys = ["id"]
+    query = "SELECT C.id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName, S.name FROM customer C LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id LEFT JOIN Subsidiary S ON S.id=SR.subsidiary WHERE C.custentity_prq_end_user='T'"
+    replication_key = None
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("enduser_sfid", th.StringType),
+        th.Property("companyName", th.StringType),
+        th.Property("name", th.StringType),
 
     ).to_dict()
 

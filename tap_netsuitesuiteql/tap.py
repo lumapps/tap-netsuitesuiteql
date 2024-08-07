@@ -54,7 +54,8 @@ class TapNetsuiteSuiteQL(Tap):
         """
         return [
             streams.ArrHistoryStream(self),
-            streams.TransactionLineStream(self)
+            streams.TransactionLineStream(self),
+            streams.EndusersStream(self)
         ]
 
 
