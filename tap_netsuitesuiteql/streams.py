@@ -79,8 +79,8 @@ class EndusersStream(NetsuiteSuiteQLStream):
         th.Property("enduser_sfid", th.StringType),
         th.Property("companyname", th.StringType),
         th.Property("subsidiary_id", th.IntegerType),
-        th.Property("subsidiary_name", th.StringType)
-        th.Property("first_order_date", th.DateType)
+        th.Property("subsidiary_name", th.StringType),
+        th.Property("first_order_date", th.DateType),
 
     ).to_dict()
 
