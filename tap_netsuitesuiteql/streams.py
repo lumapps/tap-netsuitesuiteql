@@ -71,7 +71,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
     name = "endusers"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT C.id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, S.id as subsidiary_id, S.name as subsidiary_name FROM customer C LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id LEFT JOIN Subsidiary S ON S.id=SR.subsidiary WHERE C.custentity_prq_end_user='T'"
+    query = "SELECT C.id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, C.firstOrderDate as first_order_date, S.id as subsidiary_id, S.name as subsidiary_name FROM customer C LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id LEFT JOIN Subsidiary S ON S.id=SR.subsidiary WHERE C.custentity_prq_end_user='T'"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -80,6 +80,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
         th.Property("companyname", th.StringType),
         th.Property("subsidiary_id", th.IntegerType),
         th.Property("subsidiary_name", th.StringType)
+        th.Property("first_order_date", th.DateType)
 
     ).to_dict()
 
