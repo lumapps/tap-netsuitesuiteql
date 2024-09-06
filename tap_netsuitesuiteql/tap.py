@@ -56,6 +56,7 @@ class TapNetsuiteSuiteQL(Tap):
             streams.ArrHistoryStream(self),
             streams.TransactionLineStream(self),
             streams.EndusersStream(self),
+            streams.LicensesCountStream(self),
             streams.GeographicalHierarchyStream(self)
         ]
 
