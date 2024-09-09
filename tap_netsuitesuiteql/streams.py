@@ -21,7 +21,7 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
     name = "arr_history"
     path = ""
     primary_keys = ["unique_key"]
-    query = "SELECT TL.uniqueKey unique_key, T.id id, T.trandate arr_date, TL.netamount, T.currency arr_currency, AT.name arr_type, CE.id enduser_id, CE.custentity_lum_cus_sfid enduser_sfid, LT.tranid so_tranid, LT.currency so_currency, LT.exchangerate so_exchange_rate, CR.custentity_lum_cus_sfid reseller_sfid, CR.companyname reseller_name, CP.custentity_lum_cus_sfid partner_sfid, CP.companyname partner_name, S.name subsidiary_name, S.currency subsidiary_currency, CT.name contract_name, CT.id contract_id, CEP.custentity_lum_cus_sfid enduser_parent_sfid, CEGP.custentity_lum_cus_sfid enduser_grandparent_sfid, S.custrecord_lum_fixedfxusd_sub subsidiary_exchange_rate, RR.name report_region FROM transactionline TL  LEFT JOIN transaction T ON TL.transaction = T.id  LEFT JOIN customlist_lum_arrh_arrtype AT ON AT.id = T.custbody_lum_arrh_arrtype  LEFT JOIN customer CE ON CE.id = T.custbody_lum_arrh_enduser LEFT JOIN customrecord_prq_contract CT ON CT.id = T.custbody_lum_arrh_contract LEFT JOIN customer CR ON CR.id = T.custbody_lum_arrh_reseller LEFT JOIN customer CP ON CP.id = T.custbody_lum_arrh_partner LEFT JOIN subsidiary S ON S.id = TL.subsidiary LEFT JOIN transaction LT ON LT.id = T.custbody_lum_arrh_transaction LEFT JOIN customer CEP ON CEP.id = CE.parent LEFT JOIN customer CEGP ON CEGP.id = CEP.parent LEFT JOIN CUSTOMLIST_LUM_ARRH_REGION RR ON RR.id=T. custbody_lum_arrh_region WHERE AT.name IN ('ARR', 'cARR') AND T.recordtype = 'customtransaction_lum_arrh'  AND TL.mainline = 'F'"
+    query = "SELECT TL.uniqueKey unique_key, T.id id, T.trandate arr_date, TL.netamount, T.currency arr_currency, AT.name arr_type, CE.id enduser_id, CE.custentity_lum_cus_sfid enduser_sfid, LT.tranid so_tranid, LTC.symbol so_currency, LT.exchangerate so_exchange_rate, CR.custentity_lum_cus_sfid reseller_sfid, CR.companyname reseller_name, CP.custentity_lum_cus_sfid partner_sfid, CP.companyname partner_name, S.name subsidiary_name, SC.symbol subsidiary_currency, CT.name contract_name, CT.id contract_id, CEP.custentity_lum_cus_sfid enduser_parent_sfid, CEGP.custentity_lum_cus_sfid enduser_grandparent_sfid, S.custrecord_lum_fixedfxusd_sub subsidiary_exchange_rate, RR.name report_region FROM transactionline TL  LEFT JOIN transaction T ON TL.transaction = T.id  LEFT JOIN customlist_lum_arrh_arrtype AT ON AT.id = T.custbody_lum_arrh_arrtype  LEFT JOIN customer CE ON CE.id = T.custbody_lum_arrh_enduser LEFT JOIN customrecord_prq_contract CT ON CT.id = T.custbody_lum_arrh_contract LEFT JOIN customer CR ON CR.id = T.custbody_lum_arrh_reseller LEFT JOIN customer CP ON CP.id = T.custbody_lum_arrh_partner LEFT JOIN subsidiary S ON S.id = TL.subsidiary LEFT JOIN transaction LT ON LT.id = T.custbody_lum_arrh_transaction LEFT JOIN customer CEP ON CEP.id = CE.parent LEFT JOIN customer CEGP ON CEGP.id = CEP.parent LEFT JOIN CUSTOMLIST_LUM_ARRH_REGION RR ON RR.id=T. custbody_lum_arrh_region LEFT JOIN currency LTC ON LTC.id=LT.currency LEFT JOIN currency SC ON SC.id=S.currency WHERE AT.name IN ('ARR', 'cARR') AND T.recordtype = 'customtransaction_lum_arrh'  AND TL.mainline = 'F'"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -34,14 +34,14 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
         th.Property("enduser_id", th.IntegerType),
         th.Property("enduser_sfid", th.StringType),
         th.Property("so_tranid", th.StringType),
-        th.Property("so_currency", th.IntegerType),
+        th.Property("so_currency", th.StringType),
         th.Property("so_exchange_rate", th.NumberType),
         th.Property("reseller_sfid", th.StringType),
         th.Property("reseller_name", th.StringType),
         th.Property("partner_sfid", th.StringType),
         th.Property("partner_name", th.StringType),
         th.Property("subsidiary_name", th.StringType),
-        th.Property("subsidiary_currency", th.IntegerType),
+        th.Property("subsidiary_currency", th.StringType),
         th.Property("contract_name", th.StringType),
         th.Property("contract_id", th.IntegerType),
         th.Property("enduser_parent_sfid", th.StringType),
@@ -89,6 +89,24 @@ class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
         th.Property("name", th.StringType),
         th.Property("type", th.StringType),
         th.Property("parent", th.IntegerType),
+
+    ).to_dict()
+
+class LicensesCountStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "licenses_count"
+    path = ""
+    primary_keys = ["id"]
+    query = "SELECT customrecord_lum_licenses_count.id id, custrecord_lum_licenses_count_date count_date, LT.name as license_count_type, custrecord_lum_licenses_count_enduser enduser_id, custrecord_lum_licenses_count_licenses licenses FROM customrecord_lum_licenses_count LEFT JOIN CUSTOMLIST_LUM_LICENSES_COUNT_TYPE LT ON customrecord_lum_licenses_count.custrecord_lum_licenses_count_type = LT.id WHERE LT.name='Core Package' ORDER BY custrecord_lum_licenses_count_date DESC,  custrecord_lum_licenses_count_type, custrecord_lum_licenses_count_enduser"
+    replication_key = None
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("countDate", th.DateType),
+        th.Property("license_count_type", th.StringType),
+        th.Property("enduser_id", th.IntegerType),
+        th.Property("licenses", th.IntegerType),
 
     ).to_dict()
 
