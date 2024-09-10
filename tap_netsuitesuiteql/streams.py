@@ -103,7 +103,7 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
 
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
-        th.Property("countDate", th.DateType),
+        th.Property("count_date", th.DateType),
         th.Property("license_count_type", th.StringType),
         th.Property("enduser_id", th.IntegerType),
         th.Property("licenses", th.IntegerType),
