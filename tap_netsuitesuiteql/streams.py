@@ -59,7 +59,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
     name = "endusers"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT C.id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, CY.id as country_code, CY.name as country, state.shortname state_shortname, state.fullname state_fullname, C.firstOrderDate as first_order_date, S.id as subsidiary_id, S.name as subsidiary_name, CEP.id as enduser_parent_id, CEP.companyname as enduser_parent_name, CEP.firstOrderDate as parent_first_order_date  FROM customer C LEFT JOIN customer CEP ON CEP.id = C.parent LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id  LEFT JOIN Subsidiary S ON S.id=SR.subsidiary  LEFT JOIN EntityAddress ADD ON C. defaultBillingAddress=ADD. nKey LEFT JOIN Country CY ON ADD.country=CY.id LEFT JOIN state ON ADD.country = state.country AND ADD.dropdownstate = state.shortname WHERE C.custentity_prq_end_user='T' ORDER BY id"
+    query = "SELECT C.id id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, CY.id as country_code, CY.name as country, state.shortname state_shortname, state.fullname state_fullname, C.firstOrderDate as first_order_date, S.id as subsidiary_id, S.name as subsidiary_name, CEP.id as enduser_parent_id, CEP.companyname as enduser_parent_name, CEP.firstOrderDate as parent_first_order_date  FROM customer C LEFT JOIN customer CEP ON CEP.id = C.parent LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id  LEFT JOIN Subsidiary S ON S.id=SR.subsidiary  LEFT JOIN EntityAddress ADD ON C. defaultBillingAddress=ADD. nKey LEFT JOIN Country CY ON ADD.country=CY.id LEFT JOIN state ON ADD.country = state.country AND ADD.dropdownstate = state.shortname WHERE C.custentity_prq_end_user='T' ORDER BY id"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -78,6 +78,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
         th.Property("parent_first_order_date", th.DateType),
 
     ).to_dict()
+
 
 class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
@@ -190,4 +191,23 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
 
     ).to_dict()
 
+
+class ArrRestatementsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "arr_restatements"
+    path = ""
+    primary_keys = ["id"]
+    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, R.custrecord_prq_arr_start_date start_date, R.custrecord_prq_end_date end_date, R.custrecord_prq_arr_so_est so_est_id, R.created created FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
+    replication_key = None
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("arr", th.NumberType),
+        th.Property("start_date", th.DateType),
+        th.Property("end_date", th.DateType),
+        th.Property("created", th.DateType),
+        th.Property("so_est_id", th.NumberType),
+
+    ).to_dict()
 
