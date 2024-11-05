@@ -217,3 +217,19 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
 
     ).to_dict()
 
+
+class RenewalItemsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "renewal_items"
+    path = ""
+    primary_keys = ["id"]
+    query = "select id, itemid from item where (custitem_prq_renewal='T' OR custitem_prq_arr_calculation='T') ORDER BY id"
+    replication_key = None
+
+    schema = th.PropertiesList(
+        th.Property("id", th.NumberType),
+        th.Property("itemid", th.StringType),
+
+    ).to_dict()
+
