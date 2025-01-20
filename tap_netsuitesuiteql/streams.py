@@ -239,3 +239,67 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
 
     ).to_dict()
 
+class PostingTransactionLines(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "posting_transaction_lines"
+    path = ""
+    primary_keys = ["unique_key"]
+    query = "SELECT  T.id AS id, T.tranid AS tranid,  T.trandate AS trandate,  T.type AS type, T.entity AS entity_id,  E.companyName AS entity, TL.entity AS line_entity_id, LE.companyName AS line_entity, APS.name AS approval_status,  CAPS.name AS approval_custom_status,  T.status AS status, T.memo AS memo, TL.id AS line_id, TL.mainLine AS main_line, TL.taxLine AS tax_line, TL.uniqueKey AS unique_key, SU.name AS subsidiary, DP.name AS department, IT.itemid AS item, LOC.name AS location, INT.name AS interco, REV.name AS revenue, TL.memo AS description, TL.quantity AS quantity, TL.rate AS rate, TL.foreignAmount AS foreign_amount, AM.name AS amortization_sched, TL.amortizStartDate AS amortiz_start_date, TL.amortizationEndDate AS amortization_end_date, TL.custcol_prq_start_date AS start_date_line, TL.custcol_prq_end_date as end_date_line,    TL.isRevRecTransaction AS is_rev_rec_transaction, CU.name AS currency, T.exchangeRate AS exchange_rate, TAL.posting AS posting, AP.periodName AS posting_period, AP.startDate AS posting_period_start_date, TALA.fullname AS account, TL.eliminate AS eliminate, INTT.id AS interco_transaction_id, INTT.tranid AS interco_transaction_tranid, T.intercoStatus AS interco_status, T.reversalDate AS reversal_date, T.reversal AS reversal_id, REVS.tranid AS reversal_tranid, TERM.name AS terms, T.dueDate AS due_date, T.custbody_document_date AS document_date, T.paymentHold AS payment_hold, T.customform AS custom_form FROM transactionLine TL LEFT JOIN transaction T ON T.id = TL.transaction LEFT JOIN transactionAccountingLine TAL ON TAL.transaction = TL.transaction AND TAL.transactionLine=TL.id LEFT JOIN account TALA ON TAL.account=TALA.id LEFT JOIN accountingPeriod AP ON AP.id = T.postingPeriod LEFT JOIN customer E ON E.id=T.entity LEFT JOIN customer LE ON LE.id=TL.entity LEFT JOIN approvalstatus APS ON T.approvalstatus=APS.id LEFT JOIN customlist_prq_approval_custom_status CAPS ON CAPS.id=T.custbody_prq_approval_custom_status LEFT JOIN Subsidiary SU ON TL.subsidiary = SU.id LEFT JOIN department DP ON TL.department = DP.id LEFT JOIN item IT ON IT.id=TL.item LEFT JOIN location LOC ON LOC.id=TL.location LEFT JOIN classification INT ON INT.id=TL.class LEFT JOIN CUSTOMRECORD_CSEG_PRQ_REVENUE REV ON REV.id=TL. cseg_prq_revenue LEFT JOIN AmortizationSchedule AM ON AM.id=TL.amortizationsched LEFT JOIN currency CU ON CU.id=T.currency LEFT JOIN transaction INTT ON INTT.id=T.intercoTransaction LEFT JOIN transaction REVS ON REVS.id=T.reversal LEFT JOIN term TERM ON TERM.id=T.terms WHERE  TAL.posting = 'T' ORDER BY TL.uniqueKey"
+    replication_key = None
+
+    schema = th.PropertiesList(
+        th.Property("account", th.StringType),
+        th.Property("amortiz_start_date", th.DateType),
+        th.Property("amortization_end_date", th.DateType),
+        th.Property("amortization_sched", th.StringType),
+        th.Property("approval_custom_status", th.StringType),
+        th.Property("approval_status", th.StringType),
+        th.Property("currency", th.StringType),
+        th.Property("custom_form", th.IntegerType),
+        th.Property("department", th.StringType),
+        th.Property("description", th.StringType),
+        th.Property("document_date", th.DateType),
+        th.Property("due_date", th.DateType),
+        th.Property("eliminate", th.StringType),
+        th.Property("entity", th.StringType),
+        th.Property("entity_id", th.IntegerType),
+        th.Property("exchange_rate", th.NumberType),
+        th.Property("foreign_amount", th.NumberType),
+        th.Property("id", th.IntegerType),
+        th.Property("interco", th.StringType),
+        th.Property("interco_status", th.IntegerType),
+        th.Property("interco_transaction_id", th.IntegerType),
+        th.Property("interco_transaction_tranid", th.StringType),
+        th.Property("is_rev_rec_transaction", th.StringType),
+        th.Property("item", th.StringType),
+        th.Property("line_entity", th.StringType),
+        th.Property("line_entity_id", th.IntegerType),
+        th.Property("line_id", th.IntegerType),
+        th.Property("location", th.StringType),
+        th.Property("main_line", th.StringType),
+        th.Property("memo", th.StringType),
+        th.Property("payment_hold", th.StringType),
+        th.Property("posting", th.StringType),
+        th.Property("posting_period", th.StringType),
+        th.Property("posting_period_start_date", th.DateType),
+        th.Property("quantity", th.NumberType),
+        th.Property("rate", th.NumberType),
+        th.Property("revenue", th.StringType),
+        th.Property("reversal_date", th.DateType),
+        th.Property("reversal_id", th.IntegerType),
+        th.Property("reversal_tranid", th.StringType),
+        th.Property("start_date_line", th.DateType),
+        th.Property("end_date_line", th.DateType),
+        th.Property("status", th.StringType),
+        th.Property("subsidiary", th.StringType),
+        th.Property("tax_line", th.StringType),
+        th.Property("terms", th.StringType),
+        th.Property("trandate", th.DateType),
+        th.Property("tranid", th.StringType),
+        th.Property("type", th.StringType),
+        th.Property("unique_key", th.IntegerType),
+
+    ).to_dict()
+
+
