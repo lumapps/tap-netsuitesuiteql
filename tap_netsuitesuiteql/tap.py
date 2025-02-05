@@ -59,8 +59,7 @@ class TapNetsuiteSuiteQL(Tap):
             streams.SalesOrdersStream(self),
             streams.ArrRestatementsStream(self),
             streams.GeographicalHierarchyStream(self),
-            streams.RenewalItemsStream(self),
-            streams.PostingTransactionLines(self)
+            streams.RenewalItemsStream(self)
         ]
 
 
