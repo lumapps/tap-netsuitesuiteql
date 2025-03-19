@@ -59,7 +59,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
     name = "endusers"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT C.id id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, CY.id as country_code, CY.name as country, state.shortname state_shortname, state.fullname state_fullname, C.firstOrderDate as first_order_date, S.id as subsidiary_id, S.name as subsidiary_name, CEP.id as enduser_parent_id, CEP.companyname as enduser_parent_name, CEP.firstOrderDate as parent_first_order_date, C.custentity_prq_end_user is_enduser, C.custentity_prq_partner is_partner, C.custentity_prq_reseller is_reseller FROM customer C LEFT JOIN customer CEP ON CEP.id = C.parent LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id LEFT JOIN Subsidiary S ON S.id=SR.subsidiary  LEFT JOIN EntityAddress ADD ON C. defaultBillingAddress=ADD. nKey LEFT JOIN Country CY ON ADD.country=CY.id LEFT JOIN state ON ADD.country = state.country AND ADD.dropdownstate = state.shortname WHERE (C.custentity_prq_end_user='T' OR C.custentity_prq_partner='T' OR C.custentity_prq_reseller='T') ORDER BY id"
+    query = "SELECT C.id id, C.custentity_lum_cus_sfid enduser_sfid, C.companyName as companyname, CY.id as country_code, CY.name as country, state.shortname state_shortname, state.fullname state_fullname, C.firstOrderDate as first_order_date, S.id as subsidiary_id, S.name as subsidiary_name, CEP.id as enduser_parent_id, CEP.companyname as enduser_parent_name, CEP.firstOrderDate as parent_first_order_date, C.custentity_prq_end_user is_enduser, C.custentity_prq_partner is_partner, C.custentity_prq_reseller is_reseller, AO.email as salesrep_email, CSM.email as csm_email, FROM customer C  LEFT JOIN customer CEP ON CEP.id = C.parent  LEFT JOIN customerSubsidiaryRelationship SR ON SR.entity=C.id  LEFT JOIN Subsidiary S ON S.id=SR.subsidiary   LEFT JOIN EntityAddress ADD ON C. defaultBillingAddress=ADD. nKey  LEFT JOIN Country CY ON ADD.country=CY.id  LEFT JOIN state ON ADD.country = state.country AND ADD.dropdownstate = state.shortname  LEFT JOIN employee AO ON AO.id = C.salesrep LEFT JOIN employee CSM ON CSM.id = C.custentity_prq_customer_success_manager WHERE (C.custentity_prq_end_user='T' OR C.custentity_prq_partner='T' OR C.custentity_prq_reseller='T') ORDER BY id"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -79,6 +79,8 @@ class EndusersStream(NetsuiteSuiteQLStream):
         th.Property("is_enduser", th.StringType),
         th.Property("is_partner", th.StringType),
         th.Property("is_reseller", th.StringType),
+        th.Property("salesrep_email", th.StringType),
+        th.Property("csm_email", th.StringType),
 
     ).to_dict()
 
