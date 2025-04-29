@@ -214,7 +214,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
     name = "arr_restatements"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, R.custrecord_prq_arr_start_date start_date, R.custrecord_prq_end_date end_date, R.custrecord_prq_arr_so_est so_est_id, R.created created FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
+    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, R.custrecord_prq_arr_start_date start_date, R.custrecord_prq_end_date end_date, R.custrecord_prq_arr_so_est so_est_id, R.created created, R.custrecord_lum_arr_amendment amendment FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -223,6 +223,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         th.Property("start_date", th.DateType),
         th.Property("end_date", th.DateType),
         th.Property("created", th.DateType),
+        th.Property("amendment", th.StringType),
         th.Property("so_est_id", th.NumberType),
 
     ).to_dict()
