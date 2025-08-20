@@ -214,7 +214,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
     name = "arr_restatements"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, to_char(R.custrecord_prq_arr_start_date, 'dd/MM/YYYY') start_date, to_char(R.custrecord_prq_end_date, 'dd/MM/YYYY') end_date, R.custrecord_prq_arr_so_est so_est_id, to_char(R.created, 'dd/MM/YYYY') created, R.custrecord_lum_arr_amendment amendment FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
+    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, to_char(R.custrecord_prq_arr_start_date, 'dd/MM/YYYY') start_date, to_char(R.custrecord_prq_end_date, 'dd/MM/YYYY') end_date, R.custrecord_prq_arr_so_est so_est_id, to_char(R.created, 'dd/MM/YYYY') created, R.custrecord_lum_arr_amendment amendment, R.custrecord_lum_arr_users_dnc ignore_users FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
     replication_key = None
 
     schema = th.PropertiesList(
@@ -224,6 +224,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         th.Property("end_date", th.DateType),
         th.Property("created", th.DateType),
         th.Property("amendment", th.StringType),
+        th.Property("ignore_users", th.StringType),
         th.Property("so_est_id", th.NumberType),
 
     ).to_dict()
