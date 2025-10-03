@@ -22,15 +22,21 @@ if TYPE_CHECKING:
     from singer_sdk.helpers.types import Context
 
 
+PAGE_SIZE = 5000
+
+class NetsuiteOffsetPaginator(BaseOffsetPaginator):
+    def has_more(self, response):
+        data = response.json()
+        rows =  data.get("rows", [])
+        return len(rows) >= PAGE_SIZE
+
+
 class NetsuiteSuiteQLStream(RESTStream):
     """NetsuiteSuiteQL stream class."""
     rest_method = "POST"
 
     # Update this value if necessary or override `parse_response`.
     records_jsonpath = "$.rows[*]"
-
-    # Update this value if necessary or override `get_new_paginator`.
-    next_page_token_jsonpath = "$.next_page"  # noqa: S105
 
     query = None
 
@@ -64,7 +70,7 @@ class NetsuiteSuiteQLStream(RESTStream):
         headers = {'Content-Type': 'application/json'}
         return headers
 
-    def get_new_paginator(self) -> BaseAPIPaginatorBaseOffsetPaginator:
+    def get_new_paginator(self) -> BaseAPIPaginator:
         """Create a new pagination helper instance.
 
         If the source API can make use of the `next_page_token_jsonpath`
@@ -77,7 +83,7 @@ class NetsuiteSuiteQLStream(RESTStream):
         Returns:
             A pagination helper instance.
         """
-        return BaseOffsetPaginator(start_value=0, page_size=5000)
+        return NetsuiteOffsetPaginator(start_value=0, page_size=PAGE_SIZE)
 
 
     def get_url_params(
