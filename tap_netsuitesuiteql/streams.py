@@ -84,18 +84,30 @@ class EndusersStream(NetsuiteSuiteQLStream):
 
     ).to_dict()
 
-
 class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
     name = "geography"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT R.recordid as id, R.name, RT.name as type, R.parent as parent FROM CUSTOMRECORD_LUM_REGION_CORPORATE R LEFT JOIN CUSTOMLIST_LUM_GEOGRAPHY_TYPE RT ON RT.id = R.custrecord_lum_region_corporate_type WHERE R.isinactive='F' ORDER BY id"
+    query = """SELECT 
+        R.recordid as id, 
+        CY.id as country_code,
+        R.name as name, 
+        RT.name as type, 
+        R.parent as parent 
+
+    FROM CUSTOMRECORD_LUM_REGION_CORPORATE R 
+    LEFT JOIN CUSTOMLIST_LUM_GEOGRAPHY_TYPE RT ON RT.id = R.custrecord_lum_region_corporate_type 
+    LEFT JOIN Country CY ON CY.name=R.name
+    WHERE R.isinactive='F' ORDER BY id
+    """
+
     replication_key = None
 
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
+        th.Property("country_code", th.StringType),
         th.Property("name", th.StringType),
         th.Property("type", th.StringType),
         th.Property("parent", th.IntegerType),
