@@ -221,8 +221,29 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
     name = "licenses_count"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT customrecord_lum_licenses_count.id id, to_char(custrecord_lum_licenses_count_date, 'dd/MM/YYYY') count_date, LT.name as license_count_type, custrecord_lum_licenses_count_enduser enduser_id, custrecord_lum_licenses_count_licenses licenses FROM customrecord_lum_licenses_count LEFT JOIN CUSTOMLIST_LUM_LICENSES_COUNT_TYPE LT ON customrecord_lum_licenses_count.custrecord_lum_licenses_count_type = LT.id ORDER BY custrecord_lum_licenses_count_date DESC,  custrecord_lum_licenses_count_type, custrecord_lum_licenses_count_enduser"
-    replication_key = None
+    replication_method="INCREMENTAL"
+    replication_key="last_modified_date"
+    is_sorted=True
+    start_date=datetime.fromisoformat("2010-01-01 00:00:00")
+
+    query = """
+        SELECT C.id as id, 
+        to_char(custrecord_lum_licenses_count_date, 'dd/MM/YYYY') as count_date, 
+        LT.name as license_count_type, 
+        C.custrecord_lum_licenses_count_enduser as enduser_id, 
+        C.custrecord_lum_licenses_count_licenses as licenses,
+        to_char(coalesce(C.lastmodified, C.created), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM customrecord_lum_licenses_count C
+        LEFT JOIN CUSTOMLIST_LUM_LICENSES_COUNT_TYPE LT ON C.custrecord_lum_licenses_count_type = LT.id 
+        WHERE (
+            C.lastmodified>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR C.created>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ) 
+        ORDER BY last_modified_date, custrecord_lum_licenses_count_date DESC,  
+        custrecord_lum_licenses_count_type, 
+        custrecord_lum_licenses_count_enduser
+        """
 
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
@@ -230,6 +251,7 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
         th.Property("license_count_type", th.StringType),
         th.Property("enduser_id", th.IntegerType),
         th.Property("licenses", th.IntegerType),
+        th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
 
@@ -245,7 +267,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
-    start_date=datetime.fromisoformat("2025-01-01 00:00:00")
+    start_date=datetime.fromisoformat("2020-01-01 00:00:00")
 
     query = """SELECT 
         TL.uniqueKey as unique_key, 
@@ -447,8 +469,30 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
     name = "arr_restatements"
     path = ""
     primary_keys = ["id"]
-    query = "SELECT R.id id, R.custrecord_prq_arr_amount arr, to_char(R.custrecord_prq_arr_start_date, 'dd/MM/YYYY') start_date, to_char(R.custrecord_prq_end_date, 'dd/MM/YYYY') end_date, R.custrecord_prq_arr_so_est so_est_id, to_char(R.created, 'dd/MM/YYYY') created, R.custrecord_lum_arr_amendment amendment, R.custrecord_lum_arr_users_dnc ignore_users FROM customrecord_prq_arr_restatement R WHERE isInactive='F' ORDER BY id"
-    replication_key = None
+
+    replication_method="INCREMENTAL"
+    replication_key="last_modified_date"
+    is_sorted=True
+    start_date=datetime.fromisoformat("2010-01-01 00:00:00")
+
+    query = """SELECT R.id as id, 
+        R.custrecord_prq_arr_amount as arr, 
+        to_char(R.custrecord_prq_arr_start_date, 'dd/MM/YYYY') as start_date, 
+        to_char(R.custrecord_prq_end_date, 'dd/MM/YYYY') as end_date, 
+        R.custrecord_prq_arr_so_est as so_est_id, 
+        to_char(R.created, 'dd/MM/YYYY') as created, 
+        R.custrecord_lum_arr_amendment as amendment, 
+        R.custrecord_lum_arr_users_dnc as ignore_users,
+        to_char(coalesce(R.lastmodified, R.created), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM customrecord_prq_arr_restatement R 
+        WHERE isInactive='F' 
+        AND (
+            R.lastmodified>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR R.created>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ) 
+        ORDER BY last_modified_date, id
+        """
 
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
@@ -459,6 +503,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         th.Property("amendment", th.StringType),
         th.Property("ignore_users", th.StringType),
         th.Property("so_est_id", th.NumberType),
+        th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
 
@@ -479,67 +524,127 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
 
     ).to_dict()
 
-class PostingTransactionLines(NetsuiteSuiteQLStream):
+class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
-    name = "posting_transaction_lines"
+    name = "pnl_transaction_accounting_lines"
     path = ""
     primary_keys = ["unique_key"]
-    query = "SELECT  T.id AS id, T.tranid AS tranid,  to_char(T.trandate, 'dd/MM/YYYY') AS trandate,  T.type AS type, T.entity AS entity_id,  E.companyName AS entity, TL.entity AS line_entity_id, LE.companyName AS line_entity, APS.name AS approval_status,  CAPS.name AS approval_custom_status,  T.status AS status, T.memo AS memo, TL.id AS line_id, TL.mainLine AS main_line, TL.taxLine AS tax_line, TL.uniqueKey AS unique_key, SU.name AS subsidiary, DP.name AS department, IT.itemid AS item, LOC.name AS location, INT.name AS interco, REV.name AS revenue, TL.memo AS description, TL.quantity AS quantity, TL.rate AS rate, TL.foreignAmount AS foreign_amount, AM.name AS amortization_sched, to_char(TL.amortizStartDate, 'dd/MM/YYYY') AS amortiz_start_date, to_char(TL.amortizationEndDate, 'dd/MM/YYYY') AS amortization_end_date, to_char(TL.custcol_prq_start_date, 'dd/MM/YYYY') AS start_date_line, to_char(TL.custcol_prq_end_date, 'dd/MM/YYYY') as end_date_line,    TL.isRevRecTransaction AS is_rev_rec_transaction, CU.name AS currency, T.exchangeRate AS exchange_rate, TAL.posting AS posting, AP.periodName AS posting_period, to_char(AP.startDate, 'dd/MM/YYYY') AS posting_period_start_date, TALA.fullname AS account, TL.eliminate AS eliminate, INTT.id AS interco_transaction_id, INTT.tranid AS interco_transaction_tranid, T.intercoStatus AS interco_status, to_char(T.reversalDate, 'dd/MM/YYYY') AS reversal_date, T.reversal AS reversal_id, REVS.tranid AS reversal_tranid, TERM.name AS terms, to_char(T.dueDate, 'dd/MM/YYYY') AS due_date, to_char(T.custbody_document_date, 'dd/MM/YYYY') AS document_date, T.paymentHold AS payment_hold, T.customform AS custom_form FROM transactionLine TL LEFT JOIN transaction T ON T.id = TL.transaction LEFT JOIN transactionAccountingLine TAL ON TAL.transaction = TL.transaction AND TAL.transactionLine=TL.id LEFT JOIN account TALA ON TAL.account=TALA.id LEFT JOIN accountingPeriod AP ON AP.id = T.postingPeriod LEFT JOIN customer E ON E.id=T.entity LEFT JOIN customer LE ON LE.id=TL.entity LEFT JOIN approvalstatus APS ON T.approvalstatus=APS.id LEFT JOIN customlist_prq_approval_custom_status CAPS ON CAPS.id=T.custbody_prq_approval_custom_status LEFT JOIN Subsidiary SU ON TL.subsidiary = SU.id LEFT JOIN department DP ON TL.department = DP.id LEFT JOIN item IT ON IT.id=TL.item LEFT JOIN location LOC ON LOC.id=TL.location LEFT JOIN classification INT ON INT.id=TL.class LEFT JOIN CUSTOMRECORD_CSEG_PRQ_REVENUE REV ON REV.id=TL. cseg_prq_revenue LEFT JOIN AmortizationSchedule AM ON AM.id=TL.amortizationsched LEFT JOIN currency CU ON CU.id=T.currency LEFT JOIN transaction INTT ON INTT.id=T.intercoTransaction LEFT JOIN transaction REVS ON REVS.id=T.reversal LEFT JOIN term TERM ON TERM.id=T.terms WHERE  TAL.posting = 'T' ORDER BY TL.uniqueKey"
-    replication_key = None
+    replication_key="last_modified_date"
+    replication_method="INCREMENTAL"
+    start_date=datetime.fromisoformat("2025-01-01 00:00:00")
+    is_sorted = True
+
+    query = """SELECT TL.uniqueKey as unique_key,
+    T.id as id, 
+    to_char(T.tranDate, 'dd/MM/YYYY') as tran_date, 
+    T.tranId as tran_id, 
+    AP.periodName as posting_period_name, 
+    to_char(AP.startDate, 'dd/MM/YYYY') as posting_period_date,
+    T.type as type_id, 
+    TT.custrecord_lum_trantype_typedb as type_db,
+    TT.custrecord_lum_trantype_typebi as type_bi,
+    T.recordType as subtype,
+    TST.custrecord_lum_tranrecordtype_typebi as subtype_db,
+    TST.custrecord_lum_tranrecordtype_typebi as subtype_bi,
+    TL.id as line_id, 
+    S.fullName as subsidiary, 
+    D.name as department, 
+    D.fullname as department_hierarchy,
+    TLL. fullName as location,
+    T.memo as memo, 
+    TL.memo as line_memo,
+    A.acctNumber as account_number, 
+    A.fullname as account_name,  
+    E.fullName as main_entity,
+    LE.entityTitle as line_entity,
+    TLI.fullName as line_item,
+    LJI.fullName as journal_item,
+    TL.netAmount as net_amount_currency, 
+    TC.symbol as currency,
+    TAL.netAmount as net_amount_sub_currency, 
+    SC.symbol as sub_currency,
+    TAL.account as account_id, 
+    TL.department department_id,
+    TJ.name as journal_type,
+    S.custrecord_lum_fixedfxusd_sub as budget_rate_usd,
+    T.createdDateTime as tran_created,
+    T.LastModifiedDate as tran_modified,
+    TL.lineCreatedDate as line_created,
+    TL.lineLastModifiedDate as line_modified,
+    TAL.lastModifiedDate as accounting_modified,
+
+    to_char(GREATEST(
+        coalesce(T.LastModifiedDate, T.createdDateTime), 
+        coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 
+        coalesce(TAL.lastModifiedDate, TL.lineLastModifiedDate, TL.lineCreatedDate)
+        ), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+    FROM transactionAccountingLine TAL 
+    LEFT JOIN transactionLine TL ON TL.id = TAL.transactionLine AND TL.transaction = TAL.transaction 
+    LEFT JOIN transaction T ON T.id = TAL.transaction 
+    LEFT JOIN account A ON A.id = TAL.account 
+    LEFT JOIN accountType AT ON AT.id = A.acctType 
+    LEFT JOIN subsidiary S ON S.id = TL.subsidiary 
+    LEFT JOIN department D ON D.id = TL.department 
+    LEFT JOIN accountingPeriod AP ON AP.id = T.postingPeriod 
+    LEFT JOIN Location TLL ON TLL.id=TL.location 
+    LEFT JOIN entity E ON E.id=T.entity 
+    LEFT JOIN entity LE ON LE.id=TL.entity 
+    LEFT JOIN Item TLI ON TLI.id=TL.item 
+    LEFT JOIN CUSTOMRECORD_PRQ_JOURNAL TJ ON TJ.id=T.custbody_prq_journal 
+    LEFT JOIN currency SC ON SC.id=S.currency 
+    LEFT JOIN currency TC ON TC.id=T.currency 
+    LEFT JOIN item LJI ON LJI.id=TL.custcol_prq_item_je 
+    LEFT JOIN customrecord_lum_trantype TT ON TT.name=T.type 
+    LEFT JOIN CUSTOMRECORD_LUM_TRANRECORDTYPE TST ON TST.name=T.recordType
+    WHERE TAL.posting = 'T' AND AT.balanceSheet = 'F' 
+    AND (
+        T.LastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR TL.lineLastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR TAL.lastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+    ) 
+    ORDER BY last_modified_date, unique_key
+    """
+
 
     schema = th.PropertiesList(
-        th.Property("account", th.StringType),
-        th.Property("amortiz_start_date", th.DateType),
-        th.Property("amortization_end_date", th.DateType),
-        th.Property("amortization_sched", th.StringType),
-        th.Property("approval_custom_status", th.StringType),
-        th.Property("approval_status", th.StringType),
-        th.Property("currency", th.StringType),
-        th.Property("custom_form", th.IntegerType),
-        th.Property("department", th.StringType),
-        th.Property("description", th.StringType),
-        th.Property("document_date", th.DateType),
-        th.Property("due_date", th.DateType),
-        th.Property("eliminate", th.StringType),
-        th.Property("entity", th.StringType),
-        th.Property("entity_id", th.IntegerType),
-        th.Property("exchange_rate", th.NumberType),
-        th.Property("foreign_amount", th.NumberType),
-        th.Property("id", th.IntegerType),
-        th.Property("interco", th.StringType),
-        th.Property("interco_status", th.IntegerType),
-        th.Property("interco_transaction_id", th.IntegerType),
-        th.Property("interco_transaction_tranid", th.StringType),
-        th.Property("is_rev_rec_transaction", th.StringType),
-        th.Property("item", th.StringType),
-        th.Property("line_entity", th.StringType),
-        th.Property("line_entity_id", th.IntegerType),
-        th.Property("line_id", th.IntegerType),
-        th.Property("location", th.StringType),
-        th.Property("main_line", th.StringType),
-        th.Property("memo", th.StringType),
-        th.Property("payment_hold", th.StringType),
-        th.Property("posting", th.StringType),
-        th.Property("posting_period", th.StringType),
-        th.Property("posting_period_start_date", th.DateType),
-        th.Property("quantity", th.NumberType),
-        th.Property("rate", th.NumberType),
-        th.Property("revenue", th.StringType),
-        th.Property("reversal_date", th.DateType),
-        th.Property("reversal_id", th.IntegerType),
-        th.Property("reversal_tranid", th.StringType),
-        th.Property("start_date_line", th.DateType),
-        th.Property("end_date_line", th.DateType),
-        th.Property("status", th.StringType),
-        th.Property("subsidiary", th.StringType),
-        th.Property("tax_line", th.StringType),
-        th.Property("terms", th.StringType),
-        th.Property("trandate", th.DateType),
-        th.Property("tranid", th.StringType),
-        th.Property("type", th.StringType),
         th.Property("unique_key", th.IntegerType),
-
+        th.Property("id", th.IntegerType),
+        th.Property("tran_date", th.DateType),
+        th.Property("tran_id", th.StringType),
+        th.Property("posting_period_name", th.StringType),
+        th.Property("posting_period_date", th.DateType),
+        th.Property("type_id", th.StringType),
+        th.Property("type_db", th.IntegerType),
+        th.Property("type_bi", th.IntegerType),
+        th.Property("subtype", th.StringType),
+        th.Property("subtype_db", th.IntegerType),
+        th.Property("subtype_bi", th.IntegerType),
+        th.Property("line_id", th.IntegerType),
+        th.Property("subsidiary", th.StringType),
+        th.Property("department", th.StringType),
+        th.Property("department_hierarchy", th.StringType),
+        th.Property("location", th.StringType),
+        th.Property("memo", th.StringType),
+        th.Property("line_memo", th.StringType),
+        th.Property("account_number", th.StringType),
+        th.Property("account_name", th.StringType),
+        th.Property("main_entity", th.StringType),
+        th.Property("line_entity", th.StringType),
+        th.Property("line_item", th.StringType),
+        th.Property("journal_item", th.StringType),
+        th.Property("net_amount_currency", th.NumberType),
+        th.Property("currency", th.StringType),
+        th.Property("net_amount_sub_currency", th.NumberType),
+        th.Property("sub_currency", th.StringType),
+        th.Property("account_id", th.IntegerType),
+        th.Property("department_id", th.IntegerType),
+        th.Property("journal_type", th.StringType),
+        th.Property("budget_rate_usd", th.NumberType),
+        th.Property("tran_created", th.DateTimeType),
+        th.Property("tran_modified", th.DateTimeType),
+        th.Property("line_created", th.DateTimeType),
+        th.Property("line_modified", th.DateTimeType),
+        th.Property("accounting_modified", th.DateTimeType),
+        th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
-
-
