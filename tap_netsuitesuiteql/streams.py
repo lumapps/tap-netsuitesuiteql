@@ -23,10 +23,10 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["unique_key"]
     # replication_key = None
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
-    start_date=datetime.fromisoformat("2025-01-01 00:00:00")
+    start_date=datetime.fromisoformat("2010-01-01 00:00:00")
 
     query = """SELECT TL.uniqueKey as unique_key, 
         T.id as id, 
@@ -76,8 +76,8 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
         AND T.recordtype = 'customtransaction_lum_arrh'  
         AND TL.mainline = 'F' 
         AND (
-            T.LastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-            OR TL.lineLastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            T.LastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
 
         ORDER BY last_modified_date
@@ -120,7 +120,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
 
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -156,8 +156,8 @@ class EndusersStream(NetsuiteSuiteQLStream):
         LEFT JOIN employee CSM ON CSM.id = C.custentity_prq_customer_success_manager 
         WHERE (C.custentity_prq_end_user='T' OR C.custentity_prq_partner='T' OR C.custentity_prq_reseller='T') 
         AND (
-            C.lastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-            OR C.dateCreated>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            C.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR C.dateCreated>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
         ORDER BY last_modified_date, id
         """
@@ -191,20 +191,34 @@ class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
     name = "geography"
     path = ""
     primary_keys = ["id"]
+    replication_key = "last_modified_date"
+    # replication_method="INCREMENTAL"
+    start_date=datetime.fromisoformat("2010-01-01 00:00:00")
+
     query = """SELECT 
         R.recordid as id, 
         CY.id as country_code,
         R.name as name, 
         RT.name as type, 
-        R.parent as parent 
+        R.parent as parent,
+        to_char(GREATEST(
+            COALESCE(R.lastmodified, R.created),
+            COALESCE(RT.lastmodified, RT.created)
+        ), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
 
     FROM CUSTOMRECORD_LUM_REGION_CORPORATE R 
     LEFT JOIN CUSTOMLIST_LUM_GEOGRAPHY_TYPE RT ON RT.id = R.custrecord_lum_region_corporate_type 
     LEFT JOIN Country CY ON CY.name=R.name
-    WHERE R.isinactive='F' ORDER BY id
+    WHERE R.isinactive='F' 
+    AND (
+        R.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR R.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR RT.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR RT.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+    ) 
+    ORDER BY last_modified_date, id
     """
 
-    replication_key = None
 
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
@@ -212,6 +226,7 @@ class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
         th.Property("name", th.StringType),
         th.Property("type", th.StringType),
         th.Property("parent", th.IntegerType),
+        th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
 
@@ -221,7 +236,7 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
     name = "licenses_count"
     path = ""
     primary_keys = ["id"]
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -237,8 +252,8 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
         FROM customrecord_lum_licenses_count C
         LEFT JOIN CUSTOMLIST_LUM_LICENSES_COUNT_TYPE LT ON C.custrecord_lum_licenses_count_type = LT.id 
         WHERE (
-            C.lastmodified>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-            OR C.created>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            C.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR C.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
         ORDER BY last_modified_date, custrecord_lum_licenses_count_date DESC,  
         custrecord_lum_licenses_count_type, 
@@ -264,7 +279,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     primary_keys = ["unique_key"]
 
     # replication_key=None
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2020-01-01 00:00:00")
@@ -365,7 +380,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     LEFT JOIN Location TLLOC ON TL.location = TLLOC.id   
     LEFT JOIN item TPRODUCT ON T.custbody_prq_product = TPRODUCT.id   
     LEFT JOIN CUSTOMRECORD_LUM_PRODUCTFAMILY_MA IF ON I.custitem_lum_productfamily_ma = IF.id   
-    LEFT JOIN PreviousTransactionLink PREV ON PREV.nextdoc=T.id   
+    LEFT JOIN PreviousTransactionLink PREV ON PREV.nextdoc=T.id
     LEFT JOIN NextTransactionLink NEXT ON NEXT.previousdoc=T.id   
     LEFT JOIN Transaction NEXTTRAN ON NEXTTRAN.id=NEXT.nextdoc  
     LEFT JOIN CUSTOMLIST_LUM_RENEWAL_STATUS RS ON T.custbody_lum_renewal_status = RS.id   
@@ -376,11 +391,11 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         AND TL.taxLine = 'F' 
         AND CT.name = 'Subscription' 
         AND (
-            T.LastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-            OR TL.lineLastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            T.LastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
 
-    ORDER BY last_modified_date
+    ORDER BY last_modified_date, unique_key
     """
 
 
@@ -470,7 +485,7 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
 
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -488,8 +503,8 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         FROM customrecord_prq_arr_restatement R 
         WHERE isInactive='F' 
         AND (
-            R.lastmodified>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-            OR R.created>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            R.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+            OR R.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
         ORDER BY last_modified_date, id
         """
@@ -514,15 +529,29 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
     name = "renewal_items"
     path = ""
     primary_keys = ["id"]
-    query = "select id, itemid, displayname from item where (custitem_prq_renewal='T' OR custitem_prq_arr_calculation='T') ORDER BY id"
-    replication_key = None
+    replication_key = "last_modified_date"
+    # replication_method="INCREMENTAL"
+    start_date=datetime.fromisoformat("2010-01-01 00:00:00")
+
+    query = """SELECT id as id, 
+        itemid as itemid, 
+        displayname as displayname,
+        to_char(coalesce(lastModifiedDate, createdDate), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM item 
+        WHERE (custitem_prq_renewal='T' OR custitem_prq_arr_calculation='T') 
+        AND lastModifiedDate >to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, id
+        """
 
     schema = th.PropertiesList(
         th.Property("id", th.NumberType),
         th.Property("itemid", th.StringType),
         th.Property("displayname", th.StringType),
+        th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
+
 
 class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
@@ -531,7 +560,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["unique_key"]
     replication_key="last_modified_date"
-    replication_method="INCREMENTAL"
+    # replication_method="INCREMENTAL"
     start_date=datetime.fromisoformat("2025-01-01 00:00:00")
     is_sorted = True
 
@@ -573,12 +602,12 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TL.lineCreatedDate as line_created,
     TL.lineLastModifiedDate as line_modified,
     TAL.lastModifiedDate as accounting_modified,
-
     to_char(GREATEST(
         coalesce(T.LastModifiedDate, T.createdDateTime), 
         coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 
         coalesce(TAL.lastModifiedDate, TL.lineLastModifiedDate, TL.lineCreatedDate)
         ), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
     FROM transactionAccountingLine TAL 
     LEFT JOIN transactionLine TL ON TL.id = TAL.transactionLine AND TL.transaction = TAL.transaction 
     LEFT JOIN transaction T ON T.id = TAL.transaction 
@@ -599,9 +628,9 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     LEFT JOIN CUSTOMRECORD_LUM_TRANRECORDTYPE TST ON TST.name=T.recordType
     WHERE TAL.posting = 'T' AND AT.balanceSheet = 'F' 
     AND (
-        T.LastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-        OR TL.lineLastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
-        OR TAL.lastModifiedDate>=to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        T.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        OR TAL.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
     ) 
     ORDER BY last_modified_date, unique_key
     """

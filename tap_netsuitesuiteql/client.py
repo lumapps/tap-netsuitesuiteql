@@ -37,6 +37,8 @@ class NetsuiteSuiteQLStream(RESTStream):
 
     query = None
 
+    start_date = None
+
     @property
     def url_base(self) -> str:
         """Return the API URL root, configurable via tap settings."""
@@ -115,15 +117,20 @@ class NetsuiteSuiteQLStream(RESTStream):
         Returns:
             A dictionary with the JSON body for a POST requests.
         """
-        starting_timestamp = self.get_starting_timestamp(context)
-        if starting_timestamp is not None:
-            starting_timestamp = starting_timestamp
-        elif self.start_date is not None:
-            starting_timestamp = self.start_date
-        else:
-            starting_timestamp = datetime()
+        
+        starting_timestamp = datetime.now()
+        logging.info("self.replication_method")
+        logging.info(self.replication_method)
 
-        timestamped_query = self.query.replace("__STARTING_TIMESTAMP__", starting_timestamp.isoformat(" "))
+        if self.start_date is not None:
+            starting_timestamp = self.start_date
+
+        if self.replication_method == "INCREMENTAL":
+            state_starting_timestamp = self.get_starting_timestamp(context)
+            if state_starting_timestamp is not None:
+                starting_timestamp = state_starting_timestamp
+
+        timestamped_query = self.query.replace("__STARTING_TIMESTAMP__", starting_timestamp.isoformat(" ")[:19])
 
         # Next page token is an offset
         offset=0
