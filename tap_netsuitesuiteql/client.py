@@ -34,10 +34,10 @@ class NetsuiteSuiteQLStream(RESTStream):
 
     # Update this value if necessary or override `get_new_paginator`.
     next_page_token_jsonpath = "$.rows[-1:][r]"  # noqa: S105
-
     query = None
-
     start_date = None
+    PAGE_SIZE = 5000
+
 
     @property
     def url_base(self) -> str:
@@ -119,8 +119,6 @@ class NetsuiteSuiteQLStream(RESTStream):
         """
         
         starting_timestamp = datetime.now()
-        logging.info("self.replication_method")
-        logging.info(self.replication_method)
 
         if self.start_date is not None:
             starting_timestamp = self.start_date
@@ -137,10 +135,7 @@ class NetsuiteSuiteQLStream(RESTStream):
         if next_page_token:
             offset = next_page_token
 
-        query = f"SELECT * from (SELECT  *, rownum as r FROM ( {timestamped_query} )) WHERE r BETWEEN {offset} and {offset + 4999}"
-        logging.info("TIMESTAMP")
-        logging.info(next_page_token)
-        logging.info(query.replace("\n", " "))
+        query = f"SELECT * from (SELECT  *, rownum as r FROM ( {timestamped_query} )) WHERE r BETWEEN {offset} and {offset + self.PAGE_SIZE - 1}"
         return {"query": query, "offset": offset}
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:

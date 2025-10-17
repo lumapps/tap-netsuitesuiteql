@@ -80,7 +80,7 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
             OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
 
-        ORDER BY last_modified_date
+        ORDER BY last_modified_date, unique_key
         """
 
     schema = th.PropertiesList(
@@ -255,9 +255,7 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
             C.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
             OR C.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ) 
-        ORDER BY last_modified_date, custrecord_lum_licenses_count_date DESC,  
-        custrecord_lum_licenses_count_type, 
-        custrecord_lum_licenses_count_enduser
+        ORDER BY last_modified_date, id
         """
 
     schema = th.PropertiesList(
@@ -634,7 +632,6 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     ) 
     ORDER BY last_modified_date, unique_key
     """
-
 
     schema = th.PropertiesList(
         th.Property("unique_key", th.IntegerType),
