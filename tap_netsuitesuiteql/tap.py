@@ -17,7 +17,7 @@ class TapNetsuiteSuiteQL(Tap):
     config_jsonschema = th.PropertiesList(
         th.Property(
             "realm",
-            th.IntegerType,
+            th.StringType,
             required=True,
         ),
         th.Property(
@@ -33,7 +33,6 @@ class TapNetsuiteSuiteQL(Tap):
         th.Property(
             "resource_owner_key",
             th.StringType,
-            description="The url for the API service",
         ),
         th.Property(
             "resource_owner_secret",
@@ -43,6 +42,7 @@ class TapNetsuiteSuiteQL(Tap):
         th.Property(
             "url",
             th.StringType,
+            description="The url for the API service",
         )
     ).to_dict()
 
