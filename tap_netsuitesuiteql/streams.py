@@ -22,8 +22,6 @@ class ArrHistoryStream(NetsuiteSuiteQLStream):
     name = "arr_history"
     path = ""
     primary_keys = ["unique_key"]
-    # replication_key = None
-    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -120,7 +118,6 @@ class EndusersStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
 
-    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -192,7 +189,6 @@ class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
     replication_key = "last_modified_date"
-    # replication_method="INCREMENTAL"
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
 
     query = """SELECT 
@@ -236,7 +232,6 @@ class LicensesCountStream(NetsuiteSuiteQLStream):
     name = "licenses_count"
     path = ""
     primary_keys = ["id"]
-    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -276,8 +271,6 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["unique_key"]
 
-    # replication_key=None
-    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2020-01-01 00:00:00")
@@ -491,7 +484,6 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
 
-    # replication_method="INCREMENTAL"
     replication_key="last_modified_date"
     is_sorted=True
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
@@ -544,7 +536,6 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["id"]
     replication_key = "last_modified_date"
-    # replication_method="INCREMENTAL"
     start_date=datetime.fromisoformat("2010-01-01 00:00:00")
 
     query = """SELECT id as id, 
@@ -574,7 +565,6 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["unique_key"]
     replication_key="last_modified_date"
-    # replication_method="INCREMENTAL"
     start_date=datetime.fromisoformat("2025-01-01 00:00:00")
     is_sorted = True
 
