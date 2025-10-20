@@ -356,6 +356,9 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         T.custbody_prq_arr as arr_legacy, 
         RT.tranId as renewal_estimate_tran_id, 
         NEXTTRAN.tranId as next_tran_id,
+        SOS.name as source_subsidiary,
+        T.custbody_sv_fus_migrated as migrated,
+        T.custbody_sv_fus_newtransacid as migrated_transaction_id,
 
         to_char(GREATEST(
             coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -367,6 +370,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     LEFT JOIN customer CE ON CE.id = T.custbody_prq_end_user   
     LEFT JOIN item I ON I.id = TL.item   
     LEFT JOIN subsidiary S ON S.id = TL.subsidiary   
+    LEFT JOIN subsidiary SOS ON SOS.id = T.custbody_sv_fus_sourcesub   
     LEFT JOIN currency SC ON SC.id=S.currency   
     LEFT JOIN customrecord_prq_contract C ON C.id = T.custbody_prq_contract   
     LEFT JOIN transactionStatus TS ON T.status = TS.id AND T.type = TS.trantype AND T.customtype = TS.trancustomtype   
@@ -378,8 +382,8 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     LEFT JOIN Location TLLOC ON TL.location = TLLOC.id   
     LEFT JOIN item TPRODUCT ON T.custbody_prq_product = TPRODUCT.id   
     LEFT JOIN CUSTOMRECORD_LUM_PRODUCTFAMILY_MA IF ON I.custitem_lum_productfamily_ma = IF.id   
-    LEFT JOIN PreviousTransactionLink PREV ON PREV.nextdoc=T.id
-    LEFT JOIN NextTransactionLink NEXT ON NEXT.previousdoc=T.id   
+    LEFT JOIN PreviousTransactionLink PREV ON PREV.nextdoc=T.id AND PREV.linkType = 'EstInvc'
+    LEFT JOIN NextTransactionLink NEXT ON NEXT.previousdoc=T.id AND NEXT.linkType = 'EstInvc'
     LEFT JOIN Transaction NEXTTRAN ON NEXTTRAN.id=NEXT.nextdoc  
     LEFT JOIN CUSTOMLIST_LUM_RENEWAL_STATUS RS ON T.custbody_lum_renewal_status = RS.id   
     LEFT JOIN transaction RT ON T.custbody_prq_renewal_linked_trans = RT.id   
@@ -388,6 +392,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         AND TL.mainLine = 'F' 
         AND TL.taxLine = 'F' 
         AND CT.name = 'Subscription' 
+        AND (T.custbody_sv_fus_migrated <> 'T' OR T.custbody_sv_fus_migrated IS NULL)
         AND (
             T.LastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
             OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
@@ -471,6 +476,9 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("arr_legacy", th.NumberType),
         th.Property("renewal_estimate_tran_id", th.StringType),
         th.Property("next_tran_id", th.StringType),
+        th.Property("source_subsidiary", th.StringType),
+        th.Property("migrated", th.StringType),
+        th.Property("migrated_transaction_id", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType)
 
     ).to_dict()
@@ -496,10 +504,15 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         to_char(R.created, 'dd/MM/YYYY') as created, 
         R.custrecord_lum_arr_amendment as amendment, 
         R.custrecord_lum_arr_users_dnc as ignore_users,
+        SOS.name as source_subsidiary,
+        R.custrecord_sv_fus_migrated as migrated,
+        R.custrecord_sv_fus_newtransacid as migrated_transaction_id,
         to_char(coalesce(R.lastmodified, R.created), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
 
         FROM customrecord_prq_arr_restatement R 
-        WHERE isInactive='F' 
+        LEFT JOIN subsidiary SOS ON SOS.id = R.custrecord_sv_fus_sourcesub 
+        WHERE R.isInactive='F' 
+        AND (R.custrecord_sv_fus_migrated <> 'T' OR R.custrecord_sv_fus_migrated IS NULL)
         AND (
             R.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
             OR R.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
@@ -516,6 +529,9 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         th.Property("amendment", th.StringType),
         th.Property("ignore_users", th.StringType),
         th.Property("so_est_id", th.NumberType),
+        th.Property("source_subsidiary", th.StringType),
+        th.Property("migrated", th.StringType),
+        th.Property("migrated_transaction_id", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
