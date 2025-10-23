@@ -205,7 +205,8 @@ class GeographicalHierarchyStream(NetsuiteSuiteQLStream):
     FROM CUSTOMRECORD_LUM_REGION_CORPORATE R 
     LEFT JOIN CUSTOMLIST_LUM_GEOGRAPHY_TYPE RT ON RT.id = R.custrecord_lum_region_corporate_type 
     LEFT JOIN Country CY ON CY.name=R.name
-    WHERE R.isinactive='F' 
+    WHERE R.isinactive='F'
+    AND R. custrecord_lum_region_corporate_type IS NOT NULL
     AND (
         R.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         OR R.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
