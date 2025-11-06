@@ -36,6 +36,7 @@ class NetsuiteSuiteQLStream(RESTStream):
     next_page_token_jsonpath = "$.rows[-1:][r]"  # noqa: S105
     query = None
     start_date = None
+    start_replication_key=None
     PAGE_SIZE = 5000
 
 
@@ -119,23 +120,34 @@ class NetsuiteSuiteQLStream(RESTStream):
         """
         
         starting_timestamp = datetime.now()
+        starting_replication_key = None
 
         if self.start_date is not None:
             starting_timestamp = self.start_date
 
+        if self.start_replication_key is not None:
+            starting_replication_key = self.start_replication_key
+
         if self.replication_method == "INCREMENTAL":
             state_starting_timestamp = self.get_starting_timestamp(context)
+            state_starting_replication_key = self.get_starting_replication_key_value(context)
+
             if state_starting_timestamp is not None:
                 starting_timestamp = state_starting_timestamp
 
-        timestamped_query = self.query.replace("__STARTING_TIMESTAMP__", starting_timestamp.isoformat(" ")[:19])
+            if state_starting_replication_key is not None:
+                starting_replication_key = state_starting_replication_key
+
+        incremental_query = self.query.replace("__STARTING_TIMESTAMP__", starting_timestamp.isoformat(" ")[:19])
+        if starting_replication_key is not None:
+            incremental_query = incremental_query.replace("__STARTING_REPLICATION_KEY__", starting_replication_key)
 
         # Next page token is an offset
         offset=0
         if next_page_token:
             offset = next_page_token
 
-        query = f"SELECT * from (SELECT  *, rownum as r FROM ( {timestamped_query} )) WHERE r BETWEEN {offset} and {offset + self.PAGE_SIZE - 1}"
+        query = f"SELECT * from (SELECT  *, rownum as r FROM ( {incremental_query} )) WHERE r BETWEEN {offset} and {offset + self.PAGE_SIZE - 1}"
         return {"query": query, "offset": offset}
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:

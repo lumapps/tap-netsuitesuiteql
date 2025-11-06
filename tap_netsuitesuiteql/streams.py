@@ -569,7 +569,8 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     start_date=datetime.fromisoformat("2025-01-01 00:00:00")
     is_sorted = True
 
-    query = """SELECT TL.uniqueKey as unique_key,
+    query = """SELECT 
+    TL.uniqueKey as unique_key,
     T.id as id, 
     to_char(T.tranDate, 'dd/MM/YYYY') as tran_date, 
     T.tranId as tran_id, 
@@ -614,8 +615,8 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         ), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
 
     FROM transactionAccountingLine TAL 
-    LEFT JOIN transactionLine TL ON TL.id = TAL.transactionLine AND TL.transaction = TAL.transaction 
-    LEFT JOIN transaction T ON T.id = TAL.transaction 
+    INNER JOIN transactionLine TL ON TL.id = TAL.transactionLine AND TL.transaction = TAL.transaction 
+    INNER JOIN transaction T ON T.id = TAL.transaction 
     LEFT JOIN account A ON A.id = TAL.account 
     LEFT JOIN accountType AT ON AT.id = A.acctType 
     LEFT JOIN subsidiary S ON S.id = TL.subsidiary 
@@ -680,4 +681,143 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("line_modified", th.DateTimeType),
         th.Property("accounting_modified", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+class PnlAccountsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "pnl_accounts"
+    path = ""
+
+    primary_keys = ["id"]
+    replication_key="last_modified_date"
+    start_date=datetime.fromisoformat("2015-01-01 00:00:00")
+    is_sorted = True
+
+    query = """SELECT 
+        A.id as id,
+        A.externalid as external_id,
+        A.isInactive as is_inactive,
+        A.acctNumber as account_number,
+        A.fullname as full_name,
+        T.longName as account_type,
+        TLUM.name as account_pnl_type_lumapps,
+        TFR.name as account_pnl_type_fr_gaap,
+        CLUM.name as account_pnl_category_lumapps,
+        CFR.name as account_pnl_category_fr_gaap,
+        BU.name as account_bu,
+        I.fullName as account_default_item,
+        to_char(A.lastModifiedDate, 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM account A
+        LEFT JOIN accountType T ON T.id = A.acctType
+        LEFT JOIN CUSTOMLIST_LUM_PNL_TYPE TLUM ON TLUM.id=A.custrecord_lum_account_pnl_type
+        LEFT JOIN CUSTOMLIST_LUM_PNL_TYPE TFR ON TFR.id=A.custrecord_lum_account_pnl_type_fr
+        LEFT JOIN CUSTOMLIST_LUM_PNL_CATEGORY CLUM ON CLUM.id=A.custrecord_lum_account_pnl_category
+        LEFT JOIN CUSTOMLIST_LUM_PNL_CATEGORY CFR ON CFR.id=A.custrecord_lum_account_pnl_category_fr
+        LEFT JOIN CUSTOMLIST_LUM_PNL_BU BU ON BU.id=A.custrecord_lum_account_pnl_bu
+        LEFT JOIN item I ON I.id=A.custrecord_lum_account_item_default
+        WHERE A.isinactive = 'F'
+        AND T.balanceSheet = 'F'
+        AND T. longName NOT IN ('Non Posting', 'Statistical')
+        AND acctNumber <> '7ARR'
+        AND A.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("external_id", th.StringType),
+        th.Property("is_inactive", th.StringType),
+        th.Property("account_number", th.StringType),
+        th.Property("full_name", th.StringType),
+        th.Property("account_type", th.StringType),
+        th.Property("account_pnl_type_lumapps", th.StringType),
+        th.Property("account_pnl_type_fr_gaap", th.StringType),
+        th.Property("account_pnl_category_lumapps", th.StringType),
+        th.Property("account_pnl_category_fr_gaap", th.StringType),
+        th.Property("account_bu", th.StringType),
+        th.Property("account_default_item", th.StringType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+class PnlDepartmentsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "pnl_departments"
+    path = ""
+    primary_keys = ["id"]
+    replication_key="last_modified_date"
+    start_date=datetime.fromisoformat("2015-01-01 00:00:00")
+    is_sorted = True
+
+    query = """SELECT 
+        D.id as id,
+        D.externalId as external_id,
+        D.isInactive as is_inactive,
+        D.name as department,
+        D.fullname as department_hierarchy,
+        BU.name as department_bu,
+        CC.name as department_cost_center,
+        D.custrecord_lum_department_pnl_lic_staff as department_licences_staff,
+        D.custrecord_prq_department_level as level,
+        to_char(D.lastModifiedDate, 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM Department D LEFT JOIN CUSTOMLIST_LUM_PNL_BU BU ON BU.id=D.custrecord_lum_department_pnl_bu
+        LEFT JOIN CUSTOMRECORD_LUM_PNL_COSTCENTER CC ON CC.id=D.custrecord_lum_department_pnl_costcenter
+        WHERE D.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, D.id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("external_id", th.StringType),
+        th.Property("is_inactive", th.StringType),
+        th.Property("department", th.StringType),
+        th.Property("department_hierarchy", th.StringType),
+        th.Property("department_bu", th.StringType),
+        th.Property("department_cost_center", th.StringType),
+        th.Property("department_licences_staff", th.IntegerType),
+        th.Property("level", th.IntegerType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+class PnlConsolidatedExchangeRatesStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "pnl_consolidated_exchange_rates"
+    path = ""
+    primary_keys = ["id"]
+    replication_method="FULL-TABLE"
+    
+    query = """SELECT
+        CER.id as id,
+        AP.periodName as posting_period,
+        to_char(AP.startDate, 'dd/MM/YYYY') as start_date,
+        to_char(AP.endDate, 'dd/MM/YYYY') as end_date,
+        SFROM.name as from_subsidiary,
+        STO.name as to_subsidiary,
+        CFROM.symbol as from_currency,
+        CTO.symbol as to_currency,
+        CER.averageRate as average_rate
+
+        FROM consolidatedExchangeRate CER
+        LEFT JOIN accountingPeriod AP ON AP.id = CER.postingPeriod
+        LEFT JOIN Subsidiary SFROM ON SFROM.id=CER.fromSubsidiary
+        LEFT JOIN Subsidiary STO ON STO.id=CER.toSubsidiary
+        LEFT JOIN currency CFROM ON CFROM.id=CER.fromCurrency
+        LEFT JOIN currency CTO ON CTO.id=CER.toCurrency
+        ORDER BY CER.id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("posting_period", th.StringType),
+        th.Property("start_date", th.DateType),
+        th.Property("end_date", th.DateType),
+        th.Property("from_subsidiary", th.StringType),
+        th.Property("to_subsidiary", th.StringType),
+        th.Property("from_currency", th.StringType),
+        th.Property("to_currency", th.StringType),
+        th.Property("average_rate", th.NumberType)
     ).to_dict()
