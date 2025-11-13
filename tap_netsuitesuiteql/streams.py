@@ -386,7 +386,6 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         AND TL.mainLine = 'F' 
         AND TL.taxLine = 'F' 
         AND CT.name = 'Subscription' 
-        AND (T.custbody_sv_fus_migrated <> 'T' OR T.custbody_sv_fus_migrated IS NULL)
         AND (
             T.LastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
             OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
