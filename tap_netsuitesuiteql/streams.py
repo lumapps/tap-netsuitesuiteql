@@ -505,7 +505,6 @@ class ArrRestatementsStream(NetsuiteSuiteQLStream):
         FROM customrecord_prq_arr_restatement R 
         LEFT JOIN subsidiary SOS ON SOS.id = R.custrecord_sv_fus_sourcesub 
         WHERE R.isInactive='F' 
-        AND (R.custrecord_sv_fus_migrated <> 'T' OR R.custrecord_sv_fus_migrated IS NULL)
         AND (
             R.lastmodified>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
             OR R.created>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
