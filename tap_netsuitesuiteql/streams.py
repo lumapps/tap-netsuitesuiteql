@@ -353,6 +353,8 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         SOS.name as source_subsidiary,
         T.custbody_sv_fus_migrated as migrated,
         T.custbody_sv_fus_newtransacid as migrated_transaction_id,
+        to_char(RSO.trandate,  'dd/MM/YYYY') as migration_next_tran_date,
+        RSO.id as migration_next_tran_id,
 
         to_char(GREATEST(
             coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -382,6 +384,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     LEFT JOIN CUSTOMLIST_LUM_RENEWAL_STATUS RS ON T.custbody_lum_renewal_status = RS.id   
     LEFT JOIN transaction RT ON T.custbody_prq_renewal_linked_trans = RT.id   
     LEFT JOIN employee SR ON T.employee = SR.id 
+    LEFT JOIN Transaction RSO ON RSO.id = T.custbody_prq_related_sales_order
     WHERE (T.type='SalesOrd' OR T.type='Estimate') 
         AND TL.mainLine = 'F' 
         AND TL.taxLine = 'F' 
@@ -472,6 +475,8 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("source_subsidiary", th.StringType),
         th.Property("migrated", th.StringType),
         th.Property("migrated_transaction_id", th.IntegerType),
+        th.Property("migration_next_tran_date", th.DateType),
+        th.Property("migration_next_tran_id", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType)
 
     ).to_dict()
