@@ -62,6 +62,7 @@ class TapNetsuiteSuiteQL(Tap):
             streams.RenewalItemsStream(self),
             streams.PnlTransactionAccountingLinesStream(self),
             streams.PnlAccountsStream(self),
+            streams.PnlConsolidatedExchangeRatesStream(self),
             streams.PnlDepartmentsStream(self)
         ]
 

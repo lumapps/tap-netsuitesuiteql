@@ -569,7 +569,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     path = ""
     primary_keys = ["unique_key"]
     replication_key="last_modified_date"
-    start_date=datetime.fromisoformat("2025-01-01 00:00:00")
+    start_date=datetime.fromisoformat("2020-01-01 00:00:00")
     is_sorted = True
 
     query = """SELECT 
@@ -579,6 +579,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     T.tranId as tran_id, 
     AP.periodName as posting_period_name, 
     to_char(AP.startDate, 'dd/MM/YYYY') as posting_period_date,
+    TAL.accountingBook as accounting_book_id,
     T.type as type_id, 
     TT.custrecord_lum_trantype_typedb as type_db,
     TT.custrecord_lum_trantype_typebi as type_bi,
@@ -620,8 +621,8 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     FROM transactionAccountingLine TAL 
     INNER JOIN transactionLine TL ON TL.id = TAL.transactionLine AND TL.transaction = TAL.transaction 
     INNER JOIN transaction T ON T.id = TAL.transaction 
-    LEFT JOIN account A ON A.id = TAL.account 
-    LEFT JOIN accountType AT ON AT.id = A.acctType 
+    INNER JOIN account A ON A.id = TAL.account 
+    INNER JOIN accountType AT ON AT.id = A.acctType 
     LEFT JOIN subsidiary S ON S.id = TL.subsidiary 
     LEFT JOIN department D ON D.id = TL.department 
     LEFT JOIN accountingPeriod AP ON AP.id = T.postingPeriod 
@@ -635,7 +636,12 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     LEFT JOIN item LJI ON LJI.id=TL.custcol_prq_item_je 
     LEFT JOIN customrecord_lum_trantype TT ON TT.name=T.type 
     LEFT JOIN CUSTOMRECORD_LUM_TRANRECORDTYPE TST ON TST.name=T.recordType
-    WHERE TAL.posting = 'T' AND AT.balanceSheet = 'F' 
+    WHERE TAL.posting = 'T' 
+    AND AT.balanceSheet = 'F' 
+    AND TL.mainLine = 'F' 
+    AND TL.taxLine = 'F' 
+    AND TAL.accountingBook = 1 
+    AND AP.startDate>=to_date('2025-01-01', 'YYYY-MM-DD HH24:MI:SS') 
     AND (
         T.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
@@ -651,6 +657,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("tran_id", th.StringType),
         th.Property("posting_period_name", th.StringType),
         th.Property("posting_period_date", th.DateType),
+        th.Property("accounting_book_id", th.IntegerType),
         th.Property("type_id", th.StringType),
         th.Property("type_db", th.IntegerType),
         th.Property("type_bi", th.IntegerType),
@@ -744,6 +751,73 @@ class PnlAccountsStream(NetsuiteSuiteQLStream):
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
+class PnlConsolidatedExchangeRatesStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "pnl_consolidated_exchange_rates"
+    path = ""
+    primary_keys = ["id"]
+    replication_method="FULL_TABLE"
+
+    query = """SELECT
+        R.id as id,
+        R.isDerived as is_derived,
+        R.accountingBook as accounting_book_id,
+        B.name as accounting_book,
+        AP.periodName as posting_period,
+        R.isPeriodClosed as is_period_closed,
+        to_char(AP.startDate, 'dd/MM/YYYY') as start_date,
+        to_char(AP.endDate, 'dd/MM/YYYY') as end_date,
+        R.fromSubsidiary as from_subsidiary_id,
+        R.toSubsidiary as to_subsidiary_id,
+        R.fromCurrency as from_currency_id,
+        R.toCurrency as to_currency_id,
+        SFROM.name as from_subsidiary,
+        STO.name as to_subsidiary,
+        CFROM.symbol as from_currency,
+        CTO.symbol as to_currency,
+        R.averageRate as average_rate,
+        R.currentRate as current_rate,
+        R.historicalRate as historical_rate
+
+        FROM consolidatedExchangeRate R
+        LEFT JOIN accountingPeriod AP ON AP.id = R.postingPeriod
+        LEFT JOIN accountingBook B ON B.id = R.accountingBook
+        LEFT JOIN Subsidiary SFROM ON SFROM.id=R.fromSubsidiary
+        LEFT JOIN Subsidiary STO ON STO.id=R.toSubsidiary
+        LEFT JOIN currency CFROM ON CFROM.id=R.fromCurrency
+        LEFT JOIN currency CTO ON CTO.id=R.toCurrency
+        WHERE R.fromSubsidiary NOT IN (1,7) -- excluding inactive subsidiaries with no transactions
+        AND R.toSubsidiary = 8 -- consolidating on top parent company
+        AND R.toCurrency = 2 -- consolidating in USD
+        AND R.accountingBook=1
+        AND TO_CHAR(R.periodStartDate,'YYYYMMDD') >= '20151201' -- excluding periods with no posting transactions
+        AND TO_CHAR(R.periodStartDate,'YYYYMMDD') < to_char(ADD_MONTHS(SYSDATE, 1),'YYYYMMDD') -- excluding future periods (calculations not made)
+        ORDER BY R.id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("is_derived", th.StringType),
+        th.Property("accounting_book_id", th.IntegerType),
+        th.Property("accounting_book", th.StringType),
+        th.Property("posting_period", th.StringType),
+        th.Property("is_period_closed", th.StringType),
+        th.Property("start_date", th.DateType),
+        th.Property("end_date", th.DateType),
+        th.Property("from_subsidiary", th.StringType),
+        th.Property("to_subsidiary", th.StringType),
+        th.Property("from_currency", th.StringType),
+        th.Property("to_currency", th.StringType),
+        th.Property("from_subsidiary_id", th.IntegerType),
+        th.Property("to_subsidiary_id", th.IntegerType),
+        th.Property("from_currency_id", th.IntegerType),
+        th.Property("to_currency_id", th.IntegerType),
+        th.Property("average_rate", th.NumberType),
+        th.Property("current_rate", th.NumberType),
+        th.Property("historical_rate", th.NumberType)
+    ).to_dict()
+
 class PnlDepartmentsStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
@@ -783,44 +857,4 @@ class PnlDepartmentsStream(NetsuiteSuiteQLStream):
         th.Property("department_licences_staff", th.IntegerType),
         th.Property("level", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType),
-    ).to_dict()
-
-class PnlConsolidatedExchangeRatesStream(NetsuiteSuiteQLStream):
-    """Define custom stream."""
-
-    name = "pnl_consolidated_exchange_rates"
-    path = ""
-    primary_keys = ["id"]
-    replication_method="FULL-TABLE"
-    
-    query = """SELECT
-        CER.id as id,
-        AP.periodName as posting_period,
-        to_char(AP.startDate, 'dd/MM/YYYY') as start_date,
-        to_char(AP.endDate, 'dd/MM/YYYY') as end_date,
-        SFROM.name as from_subsidiary,
-        STO.name as to_subsidiary,
-        CFROM.symbol as from_currency,
-        CTO.symbol as to_currency,
-        CER.averageRate as average_rate
-
-        FROM consolidatedExchangeRate CER
-        LEFT JOIN accountingPeriod AP ON AP.id = CER.postingPeriod
-        LEFT JOIN Subsidiary SFROM ON SFROM.id=CER.fromSubsidiary
-        LEFT JOIN Subsidiary STO ON STO.id=CER.toSubsidiary
-        LEFT JOIN currency CFROM ON CFROM.id=CER.fromCurrency
-        LEFT JOIN currency CTO ON CTO.id=CER.toCurrency
-        ORDER BY CER.id
-    """
-
-    schema = th.PropertiesList(
-        th.Property("id", th.IntegerType),
-        th.Property("posting_period", th.StringType),
-        th.Property("start_date", th.DateType),
-        th.Property("end_date", th.DateType),
-        th.Property("from_subsidiary", th.StringType),
-        th.Property("to_subsidiary", th.StringType),
-        th.Property("from_currency", th.StringType),
-        th.Property("to_currency", th.StringType),
-        th.Property("average_rate", th.NumberType)
     ).to_dict()
