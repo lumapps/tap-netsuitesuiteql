@@ -581,16 +581,14 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     to_char(AP.startDate, 'dd/MM/YYYY') as posting_period_date,
     TAL.accountingBook as accounting_book_id,
     T.type as type_id, 
-    TT.custrecord_lum_trantype_typedb as type_db,
+    concat('', TTBI.name) as type,
     TT.custrecord_lum_trantype_typebi as type_bi,
-    T.recordType as subtype,
-    TST.custrecord_lum_tranrecordtype_typebi as subtype_db,
-    TST.custrecord_lum_tranrecordtype_typebi as subtype_bi,
     TL.id as line_id, 
     S.fullName as subsidiary, 
+    to_char(S.custrecord_lum_merger_date, 'dd/MM/YYYY') as subsidiary_merger_date,
     D.name as department, 
     D.fullname as department_hierarchy,
-    TLL. fullName as location,
+    TLL.fullName as location,
     T.memo as memo, 
     TL.memo as line_memo,
     A.acctNumber as account_number, 
@@ -600,6 +598,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TLI.fullName as line_item,
     LJI.fullName as journal_item,
     TL.netAmount as net_amount_currency, 
+    T.exchangeRate as exchange_rate,
     TC.symbol as currency,
     TAL.netAmount as net_amount_sub_currency, 
     SC.symbol as sub_currency,
@@ -607,11 +606,6 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TL.department department_id,
     TJ.name as journal_type,
     S.custrecord_lum_fixedfxusd_sub as budget_rate_usd,
-    T.createdDateTime as tran_created,
-    T.LastModifiedDate as tran_modified,
-    TL.lineCreatedDate as line_created,
-    TL.lineLastModifiedDate as line_modified,
-    TAL.lastModifiedDate as accounting_modified,
     to_char(GREATEST(
         coalesce(T.LastModifiedDate, T.createdDateTime), 
         coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 
@@ -623,6 +617,8 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     INNER JOIN transaction T ON T.id = TAL.transaction 
     INNER JOIN account A ON A.id = TAL.account 
     INNER JOIN accountType AT ON AT.id = A.acctType 
+    INNER JOIN customrecord_lum_trantype TT ON TT.name=T.type 
+    INNER JOIN customrecord_lum_trantypebi TTBI on TT.custrecord_lum_trantype_typebi=TTBI.id
     LEFT JOIN subsidiary S ON S.id = TL.subsidiary 
     LEFT JOIN department D ON D.id = TL.department 
     LEFT JOIN accountingPeriod AP ON AP.id = T.postingPeriod 
@@ -634,14 +630,15 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     LEFT JOIN currency SC ON SC.id=S.currency 
     LEFT JOIN currency TC ON TC.id=T.currency 
     LEFT JOIN item LJI ON LJI.id=TL.custcol_prq_item_je 
-    LEFT JOIN customrecord_lum_trantype TT ON TT.name=T.type 
-    LEFT JOIN CUSTOMRECORD_LUM_TRANRECORDTYPE TST ON TST.name=T.recordType
     WHERE TAL.posting = 'T' 
     AND AT.balanceSheet = 'F' 
-    AND TL.mainLine = 'F' 
     AND TL.taxLine = 'F' 
     AND TAL.accountingBook = 1 
-    AND AP.startDate>=to_date('2025-01-01', 'YYYY-MM-DD HH24:MI:SS') 
+    AND AP.startDate<=to_date(to_char(ADD_MONTHS(SYSDATE, 1), 'YYYY-MM-DD'), 'YYYY-MM-DD')
+
+    AND AP.startDate>=to_date('2025-01-01', 'YYYY-MM-DD') 
+    AND AP.startDate<to_date('2026-01-01', 'YYYY-MM-DD') 
+
     AND (
         T.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
@@ -659,13 +656,10 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("posting_period_date", th.DateType),
         th.Property("accounting_book_id", th.IntegerType),
         th.Property("type_id", th.StringType),
-        th.Property("type_db", th.IntegerType),
-        th.Property("type_bi", th.IntegerType),
-        th.Property("subtype", th.StringType),
-        th.Property("subtype_db", th.IntegerType),
-        th.Property("subtype_bi", th.IntegerType),
+        th.Property("type", th.StringType),
         th.Property("line_id", th.IntegerType),
         th.Property("subsidiary", th.StringType),
+        th.Property("subsidiary_merger_date", th.StringType),
         th.Property("department", th.StringType),
         th.Property("department_hierarchy", th.StringType),
         th.Property("location", th.StringType),
@@ -678,6 +672,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("line_item", th.StringType),
         th.Property("journal_item", th.StringType),
         th.Property("net_amount_currency", th.NumberType),
+        th.Property("exchange_rate", th.NumberType),
         th.Property("currency", th.StringType),
         th.Property("net_amount_sub_currency", th.NumberType),
         th.Property("sub_currency", th.StringType),
@@ -685,11 +680,6 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("department_id", th.IntegerType),
         th.Property("journal_type", th.StringType),
         th.Property("budget_rate_usd", th.NumberType),
-        th.Property("tran_created", th.DateTimeType),
-        th.Property("tran_modified", th.DateTimeType),
-        th.Property("line_created", th.DateTimeType),
-        th.Property("line_modified", th.DateTimeType),
-        th.Property("accounting_modified", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
