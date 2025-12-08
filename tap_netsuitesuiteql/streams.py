@@ -635,10 +635,6 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     AND TL.taxLine = 'F' 
     AND TAL.accountingBook = 1 
     AND AP.startDate<=to_date(to_char(ADD_MONTHS(SYSDATE, 1), 'YYYY-MM-DD'), 'YYYY-MM-DD')
-
-    AND AP.startDate>=to_date('2025-01-01', 'YYYY-MM-DD') 
-    AND AP.startDate<to_date('2026-01-01', 'YYYY-MM-DD') 
-
     AND (
         T.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
