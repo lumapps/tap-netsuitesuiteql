@@ -605,6 +605,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TAL.account as account_id, 
     TL.department department_id,
     TJ.name as journal_type,
+    T.custbody_sv_fus_migrated as migrated,
     S.custrecord_lum_fixedfxusd_sub as budget_rate_usd,
     to_char(GREATEST(
         coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -635,6 +636,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     AND TL.taxLine = 'F' 
     AND TAL.accountingBook = 1 
     AND AP.startDate<=to_date(to_char(ADD_MONTHS(SYSDATE, 1), 'YYYY-MM-DD'), 'YYYY-MM-DD')
+
     AND (
         T.lastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         OR TL.lineLastModifiedDate>to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
@@ -675,6 +677,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("account_id", th.IntegerType),
         th.Property("department_id", th.IntegerType),
         th.Property("journal_type", th.StringType),
+        th.Property("migrated", th.StringType),
         th.Property("budget_rate_usd", th.NumberType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
