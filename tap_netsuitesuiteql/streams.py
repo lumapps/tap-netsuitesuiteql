@@ -124,6 +124,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
 
     query = """SELECT C.id as id, 
         C.custentity_lum_cus_sfid as enduser_sfid, 
+        C.custentity_lum_salesforce_partner_id as partner_sfid,
         C.companyName as companyname, 
         CY.id as country_code, 
         CY.name as country, 
@@ -162,6 +163,7 @@ class EndusersStream(NetsuiteSuiteQLStream):
     schema = th.PropertiesList(
         th.Property("id", th.IntegerType),
         th.Property("enduser_sfid", th.StringType),
+        th.Property("partner_sfid", th.StringType),
         th.Property("companyname", th.StringType),
         th.Property("country_code", th.StringType),
         th.Property("country", th.StringType),
