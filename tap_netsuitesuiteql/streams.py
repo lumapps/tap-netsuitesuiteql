@@ -357,6 +357,10 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         T.custbody_sv_fus_newtransacid as migrated_transaction_id,
         to_char(RSO.trandate,  'dd/MM/YYYY') as migration_next_tran_date,
         RSO.id as migration_next_tran_id,
+        TBF.name as billing_frequency,
+        T.custbody_prq_billing_frequency_months as billing_frequency_months,
+        TBT.id as billing_term_id,
+        TBT.name as billing_terms,
 
         to_char(GREATEST(
             coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -387,6 +391,9 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
     LEFT JOIN transaction RT ON T.custbody_prq_renewal_linked_trans = RT.id   
     LEFT JOIN employee SR ON T.employee = SR.id 
     LEFT JOIN Transaction RSO ON RSO.id = T.custbody_prq_related_sales_order
+    LEFT JOIN CUSTOMLIST_PRQ_BILLING_FREQUENCY TBF on TBF.id=T.custbody_prq_billing_frequency
+    LEFT JOIN term TBT on TBT.id = T.terms
+
     WHERE (T.type='SalesOrd' OR T.type='Estimate') 
         AND TL.mainLine = 'F' 
         AND TL.taxLine = 'F' 
@@ -479,6 +486,10 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("migrated_transaction_id", th.IntegerType),
         th.Property("migration_next_tran_date", th.DateType),
         th.Property("migration_next_tran_id", th.IntegerType),
+        th.Property("billing_frequency", th.StringType),
+        th.Property("billing_frequency_months", th.IntegerType),
+        th.Property("billing_term_id", th.IntegerType),
+        th.Property("billing_terms", th.StringType),
         th.Property("last_modified_date", th.DateTimeType)
 
     ).to_dict()
