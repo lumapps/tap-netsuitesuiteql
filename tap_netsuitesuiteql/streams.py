@@ -359,6 +359,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         RSO.id as migration_next_tran_id,
         TBF.name as billing_frequency,
         T.custbody_prq_billing_frequency_months as billing_frequency_months,
+        T.billingStatus as billing_status,
         TBT.id as billing_term_id,
         TBT.name as billing_terms,
 
@@ -490,6 +491,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("billing_frequency_months", th.IntegerType),
         th.Property("billing_term_id", th.IntegerType),
         th.Property("billing_terms", th.StringType),
+        th.Property("billing_status", th.StringType),
         th.Property("last_modified_date", th.DateTimeType)
 
     ).to_dict()
