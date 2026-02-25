@@ -362,7 +362,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         T.billingStatus as billing_status,
         TBT.id as billing_term_id,
         TBT.name as billing_terms,
-
+        to_char(coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as line_last_modified_date,
         to_char(GREATEST(
             coalesce(T.LastModifiedDate, T.createdDateTime), 
             coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate)
@@ -492,6 +492,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("billing_term_id", th.IntegerType),
         th.Property("billing_terms", th.StringType),
         th.Property("billing_status", th.StringType),
+        th.Property("line_last_modified_date", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType)
 
     ).to_dict()
@@ -622,6 +623,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TJ.name as journal_type,
     T.custbody_sv_fus_migrated as migrated,
     S.custrecord_lum_fixedfxusd_sub as budget_rate_usd,
+    to_char(coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as line_last_modified_date,
     to_char(GREATEST(
         coalesce(T.LastModifiedDate, T.createdDateTime), 
         coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 
@@ -694,6 +696,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("journal_type", th.StringType),
         th.Property("migrated", th.StringType),
         th.Property("budget_rate_usd", th.NumberType),
+        th.Property("line_last_modified_date", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
@@ -860,5 +863,93 @@ class PnlDepartmentsStream(NetsuiteSuiteQLStream):
         th.Property("department_cost_center", th.StringType),
         th.Property("department_licences_staff", th.IntegerType),
         th.Property("level", th.IntegerType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+class DeletedTransactionsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "deleted_transactions"
+    path = ""
+    primary_keys = ["id"]
+    replication_key="last_modified_date"
+    start_date=datetime.fromisoformat("2015-01-01 00:00:00")
+    is_sorted = True
+
+    query = """SELECT 
+        TH.internalId as id,
+        TH.transaction,
+        TN.name as type,
+        TH.customType,
+        TS.name as status,
+        TH.documentNumber as document_number, 
+        TH.transactionNumber as transaction_number, 
+        to_char(TH.transactionDate, 'YYYY-MM-DD HH24:MI:SS')as transaction_date, 
+        TE.fullName as entity, 
+        TH.amount,
+        TH.account as account_id,
+        A.accountSearchDisplayName as account,
+        TH.action,  
+        TH.version,
+        TH.userName as user_id, 
+        TU.fullName as user,
+        AT.longName as account_type,
+        to_char(TH.dateTime, 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+
+        FROM transactionHistory TH
+        LEFT JOIN  TransactionName TN ON TH.type = TN.type AND TH.customtype = TN.customtype
+        LEFT JOIN transactionStatus TS ON TH.status = TS.id AND TH.type = TS.trantype AND TH.customtype = TS.trancustomtype
+        LEFT JOIN entity TE ON TH.entity = TE.id
+        LEFT JOIN entity TU ON TH.username = TU.id
+        LEFT JOIN account A ON TH.account = A.id
+        LEFT JOIN accountType AT ON AT.id = A.acctType
+        WHERE TH.action = 'DELETE' AND TH.dateTime > to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("transaction", th.IntegerType),
+        th.Property("type", th.StringType),
+        th.Property("customType", th.IntegerType),
+        th.Property("status", th.StringType),
+        th.Property("document_number", th.StringType),
+        th.Property("transaction_number", th.StringType),
+        th.Property("transaction_date", th.StringType),
+        th.Property("entity", th.StringType),
+        th.Property("amount", th.NumberType),
+        th.Property("account_id", th.IntegerType),
+        th.Property("account", th.StringType),
+        th.Property("action", th.StringType),
+        th.Property("version", th.IntegerType),
+        th.Property("user_id", th.IntegerType),
+        th.Property("user", th.StringType),
+        th.Property("account_type", th.StringType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+class TransactionLinesVersionsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "transaction_lines_versions"
+    path = ""
+    primary_keys = ["transaction_id"]
+    replication_key="last_modified_date"
+    start_date=datetime.fromisoformat("2015-01-01 00:00:00")
+    is_sorted = True
+
+    query = """SELECT
+        T.id as transaction_id,
+        TL.uniqueKey as line_unique_key,
+        to_char(T.LastModifiedDate, 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+        FROM transaction T
+        LEFT JOIN transactionLine TL ON TL.transaction = T.id
+        WHERE T.LastModifiedDate > to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY T.LastModifiedDate
+    """
+
+    schema = th.PropertiesList(
+        th.Property("transaction_id", th.IntegerType),
+        th.Property("line_unique_key", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
