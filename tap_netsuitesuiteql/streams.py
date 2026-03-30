@@ -362,6 +362,8 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         T.billingStatus as billing_status,
         TBT.id as billing_term_id,
         TBT.name as billing_terms,
+        T.custbody_sv_active_line_ids as active_lines,
+
         to_char(coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as line_last_modified_date,
         to_char(GREATEST(
             coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -492,6 +494,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("billing_term_id", th.IntegerType),
         th.Property("billing_terms", th.StringType),
         th.Property("billing_status", th.StringType),
+        th.Property("active_lines", th.StringType),
         th.Property("line_last_modified_date", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType)
 
@@ -623,6 +626,8 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
     TJ.name as journal_type,
     T.custbody_sv_fus_migrated as migrated,
     S.custrecord_lum_fixedfxusd_sub as budget_rate_usd,
+    T.custbody_sv_active_line_ids as active_lines,
+    
     to_char(coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as line_last_modified_date,
     to_char(GREATEST(
         coalesce(T.LastModifiedDate, T.createdDateTime), 
@@ -696,6 +701,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("journal_type", th.StringType),
         th.Property("migrated", th.StringType),
         th.Property("budget_rate_usd", th.NumberType),
+        th.Property("active_lines", th.StringType),
         th.Property("line_last_modified_date", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
