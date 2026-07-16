@@ -564,10 +564,11 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
     query = """SELECT id as id, 
         itemid as itemid, 
         displayname as displayname,
+        custitem_prq_renewal,
+        custitem_prq_arr_calculation,
         to_char(coalesce(lastModifiedDate, createdDate), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
-
         FROM item 
-        WHERE (custitem_prq_renewal='T' OR custitem_prq_arr_calculation='T') 
+        WHERE itemType='NonInvtPart' 
         AND lastModifiedDate >to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
         ORDER BY last_modified_date, id
         """
@@ -576,6 +577,8 @@ class RenewalItemsStream(NetsuiteSuiteQLStream):
         th.Property("id", th.NumberType),
         th.Property("itemid", th.StringType),
         th.Property("displayname", th.StringType),
+        th.Property("custitem_prq_renewal", th.StringType),
+        th.Property("custitem_prq_arr_calculation", th.StringType),
         th.Property("last_modified_date", th.DateTimeType),
 
     ).to_dict()
