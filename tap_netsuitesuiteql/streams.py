@@ -709,6 +709,7 @@ class PnlTransactionAccountingLinesStream(NetsuiteSuiteQLStream):
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
+
 class PnlAccountsStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
@@ -766,6 +767,7 @@ class PnlAccountsStream(NetsuiteSuiteQLStream):
         th.Property("account_default_item", th.StringType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
+
 
 class PnlConsolidatedExchangeRatesStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
@@ -834,6 +836,7 @@ class PnlConsolidatedExchangeRatesStream(NetsuiteSuiteQLStream):
         th.Property("historical_rate", th.NumberType)
     ).to_dict()
 
+
 class PnlDepartmentsStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
@@ -874,6 +877,7 @@ class PnlDepartmentsStream(NetsuiteSuiteQLStream):
         th.Property("level", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
+
 
 class DeletedTransactionsStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
@@ -937,6 +941,157 @@ class DeletedTransactionsStream(NetsuiteSuiteQLStream):
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
+
+class InvoicesStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "invoices"
+    path = ""
+    primary_keys = ["invoice_id"]
+    replication_key = "last_modified_date"
+    is_sorted = True
+    start_date = datetime.fromisoformat("2020-01-01 00:00:00")
+
+    query = """SELECT
+        I.id as invoice_id,
+        I.tranId as transaction_id,
+        I.subsidiary as subsidiary,
+        I.currency as currency,
+        I.exchangerate as exchangerate,
+        I.entity as entity,
+        I.custbody_prq_end_user as enduser_id,
+        I.custbody_prq_contract_type as contract_type,
+        I.trandate as transaction_date,
+        I.postingperiod as postingperiod,
+        I.custbody_prq_trandate_draft as transaction_date_draft,
+        I.custbody_prq_inv_clsg_date as invoice_closing_date,
+        I.custbody_prq_inv_today_date as invoice_today_date,
+        I.terms as terms,
+        I.duedate as due_date,
+        I.otherrefnum as purchase_order_number,
+        I.createdfrom as sales_order_id,
+        I.approvalstatus as approval_status,
+        I.location as location,
+        to_char(coalesce(I.lastModifiedDate, I.createdDate), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+        FROM Invoice I
+        WHERE I.lastModifiedDate > to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, invoice_id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("invoice_id", th.IntegerType),
+        th.Property("transaction_id", th.StringType),
+        th.Property("subsidiary", th.IntegerType),
+        th.Property("currency", th.IntegerType),
+        th.Property("exchangerate", th.NumberType),
+        th.Property("entity", th.IntegerType),
+        th.Property("enduser_id", th.IntegerType),
+        th.Property("contract_type", th.IntegerType),
+        th.Property("transaction_date", th.DateType),
+        th.Property("postingperiod", th.IntegerType),
+        th.Property("transaction_date_draft", th.DateType),
+        th.Property("invoice_closing_date", th.DateType),
+        th.Property("invoice_today_date", th.DateType),
+        th.Property("terms", th.IntegerType),
+        th.Property("due_date", th.DateType),
+        th.Property("purchase_order_number", th.StringType),
+        th.Property("sales_order_id", th.IntegerType),
+        th.Property("approval_status", th.IntegerType),
+        th.Property("location", th.IntegerType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+
+class InvoiceItemsStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "invoice_items"
+    path = ""
+    primary_keys = ["unique_key"]
+    replication_key = "last_modified_date"
+    is_sorted = True
+    start_date = datetime.fromisoformat("2020-01-01 00:00:00")
+
+    query = """SELECT
+        Item.uniqueKey as unique_key,
+        Item.invoice as invoice_id,
+        Item.item as item_id,
+        Item.custcol_prq_billing_period_from as billing_period_from,
+        Item.custcol_prq_billing_period_to as billing_period_to,
+        Item.custcol_prq_billing_schedule_ref as billing_schedule_id,
+        Item.quantity as quantity,
+        to_char(coalesce(Item.lineLastModifiedDate, Item.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+        FROM InvoiceItem Item
+        WHERE Item.lineLastModifiedDate > to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, unique_key
+    """
+
+    schema = th.PropertiesList(
+        th.Property("unique_key", th.IntegerType),
+        th.Property("invoice_id", th.IntegerType),
+        th.Property("item_id", th.IntegerType),
+        th.Property("billing_period_from", th.DateType),
+        th.Property("billing_period_to", th.DateType),
+        th.Property("billing_schedule_id", th.IntegerType),
+        th.Property("quantity", th.NumberType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+
+class BillingSchedulesStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "billing_schedules"
+    path = ""
+    primary_keys = ["id"]
+    replication_key = "last_modified_date"
+    is_sorted = True
+    start_date = datetime.fromisoformat("2020-01-01 00:00:00")
+
+    query = """SELECT
+        bs.id as id,
+        bs.name as billing_schedule_name,
+        bs.custrecord_prq_bs_sales_order as billing_schedule_sales_order,
+        bs.custrecord_prq_bs_sales_order_line as billing_schedule_sales_order_line,
+        bs.custrecord_prq_bs_date as billing_schedule_date,
+        bs.custrecord_prq_bs_amount as billing_schedule_amount,
+        bs.custrecord_prq_bs_period_from as billing_schedule_period_from,
+        bs.custrecord_prq_bs_period_to as billing_schedule_period_to,
+        bs.custrecord_prq_bs_hold as billing_schedule_hold,
+        bs.custrecord_prq_bs_memo as billing_schedule_memo,
+        bo.name as billing_option,
+        bs.custrecord_prq_bs_fulfillment as billing_schedule_fulfillment,
+        bs.custrecord_prq_bs_reference as billing_schedule_reference,
+        bs.custrecord_prq_bs_on_process as billing_schedule_on_process,
+        bs.custrecord_prq_bs_processed as billing_schedule_processed,
+        to_char(coalesce(bs.lastmodified, bs.created), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+        FROM CUSTOMRECORD_PRQ_BILLING_SCHEDULE bs
+        LEFT JOIN CUSTOMLIST_PRQ_BILLING_OPTION bo
+            ON bs.custrecord_prq_bs_billing_option = bo.id
+        WHERE bs.lastmodified > to_date('__STARTING_TIMESTAMP__', 'YYYY-MM-DD HH24:MI:SS')
+        ORDER BY last_modified_date, id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("billing_schedule_name", th.StringType),
+        th.Property("billing_schedule_sales_order", th.IntegerType),
+        th.Property("billing_schedule_sales_order_line", th.IntegerType),
+        th.Property("billing_schedule_date", th.DateType),
+        th.Property("billing_schedule_amount", th.NumberType),
+        th.Property("billing_schedule_period_from", th.DateType),
+        th.Property("billing_schedule_period_to", th.DateType),
+        th.Property("billing_schedule_hold", th.StringType),
+        th.Property("billing_schedule_memo", th.StringType),
+        th.Property("billing_option", th.StringType),
+        th.Property("billing_schedule_fulfillment", th.IntegerType),
+        th.Property("billing_schedule_reference", th.StringType),
+        th.Property("billing_schedule_on_process", th.StringType),
+        th.Property("billing_schedule_processed", th.StringType),
+        th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+
 class TransactionLinesVersionsStream(NetsuiteSuiteQLStream):
     """Define custom stream."""
 
@@ -961,4 +1116,62 @@ class TransactionLinesVersionsStream(NetsuiteSuiteQLStream):
         th.Property("transaction_id", th.IntegerType),
         th.Property("line_unique_key", th.IntegerType),
         th.Property("last_modified_date", th.DateTimeType),
+    ).to_dict()
+
+
+class CustomerPaymentApplyLineStream(NetsuiteSuiteQLStream):
+    """Define custom stream."""
+
+    name = "customer_payment_apply_lines"
+    path = ""
+    primary_keys = ["parent_transaction", "line_id"]
+    replication_method = "FULL_TABLE"
+
+    query = """SELECT
+        cpal.line as line_id,
+        cpal.createdfrom as created_from,
+        cpal.acctrec as accounts_receivable,
+        cpal.parenttransaction as parent_transaction,
+        cpal.amount as amount,
+        cpal.type as type,
+        cpal.transactionid as transaction_id,
+        cpal.applydate as apply_date,
+        cpal.total as total,
+        cpal.refnum as reference_number,
+        cpal.duedate as due_date,
+        cpal.doc as invoice_id,
+        cpal.currency as currency,
+        cpal.disc as discount,
+        cpal.trantype as transaction_type,
+        cp.id as customer_payment_id,
+        cp.tranid as customer_payment_transaction_id,
+        cp.payment as customer_payment_amount,
+        cp.status as customer_payment_status,
+        CustomerPaymentStatus.name as payment_status_name
+        FROM CustomerPaymentApplyLine cpal
+        LEFT JOIN customerPayment cp ON cpal.parenttransaction = cp.id
+        LEFT JOIN CustomerPaymentStatus ON cp.status = CustomerPaymentStatus.id
+    """
+
+    schema = th.PropertiesList(
+        th.Property("line_id", th.IntegerType),
+        th.Property("created_from", th.IntegerType),
+        th.Property("accounts_receivable", th.IntegerType),
+        th.Property("parent_transaction", th.IntegerType),
+        th.Property("amount", th.NumberType),
+        th.Property("type", th.StringType),
+        th.Property("transaction_id", th.IntegerType),
+        th.Property("apply_date", th.DateType),
+        th.Property("total", th.NumberType),
+        th.Property("reference_number", th.StringType),
+        th.Property("due_date", th.DateType),
+        th.Property("invoice_id", th.IntegerType),
+        th.Property("currency", th.IntegerType),
+        th.Property("discount", th.NumberType),
+        th.Property("transaction_type", th.StringType),
+        th.Property("customer_payment_id", th.IntegerType),
+        th.Property("customer_payment_transaction_id", th.StringType),
+        th.Property("customer_payment_amount", th.NumberType),
+        th.Property("customer_payment_status", th.IntegerType),
+        th.Property("payment_status_name", th.StringType),
     ).to_dict()
