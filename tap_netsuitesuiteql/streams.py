@@ -363,6 +363,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         TBT.id as billing_term_id,
         TBT.name as billing_terms,
         T.custbody_sv_active_line_ids as active_lines,
+        T.custbody_stc_amount_after_discount as sub_total,
 
         to_char(coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate), 'YYYY-MM-DD HH24:MI:SS') as line_last_modified_date,
         to_char(GREATEST(
@@ -495,6 +496,7 @@ class SalesOrdersStream(NetsuiteSuiteQLStream):
         th.Property("billing_terms", th.StringType),
         th.Property("billing_status", th.StringType),
         th.Property("active_lines", th.StringType),
+        th.Property("sub_total", th.NumberType),
         th.Property("line_last_modified_date", th.DateTimeType),
         th.Property("last_modified_date", th.DateTimeType)
 
