@@ -67,9 +67,6 @@ class TapNetsuiteSuiteQL(Tap):
             streams.DeletedTransactionsStream(self),
             streams.TransactionLinesVersionsStream(self),
             streams.InvoicesStream(self),
-            streams.InvoiceItemsStream(self),
-            streams.BillingSchedulesStream(self),
-            streams.CustomerPaymentApplyLineStream(self),
         ]
 
 
