@@ -1007,7 +1007,10 @@ class InvoicesStream(NetsuiteSuiteQLStream):
         CP.tranId as number,
         CPS.name as payment_status_name,
         CPL.amount as amount,
-        to_char(coalesce(T.lastModifiedDate, T.createdDate), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
+        to_char(GREATEST(
+                    coalesce(T.LastModifiedDate, T.createdDateTime), 
+                    coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate)
+                ), 'YYYY-MM-DD HH24:MI:SS') as last_modified_date
     FROM transaction T
     LEFT JOIN transactionline TL ON TL.transaction = T.id
     LEFT JOIN Item I ON I.id IS NOT NULL AND I.id = TL.item
