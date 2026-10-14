@@ -1006,7 +1006,8 @@ class InvoicesStream(NetsuiteSuiteQLStream):
         TN.name as type,
         CP.tranId as number,
         CPS.name as payment_status_name,
-        CPL.amount as amount,
+        CPL.amount as payment_amount,
+        T.custbody_stc_amount_after_discount as invoice_sub_total,
         to_char(GREATEST(
                     coalesce(T.LastModifiedDate, T.createdDateTime), 
                     coalesce(TL.lineLastModifiedDate, TL.lineCreatedDate)
@@ -1093,7 +1094,8 @@ class InvoicesStream(NetsuiteSuiteQLStream):
         th.Property("type", th.StringType),
         th.Property("number", th.StringType),
         th.Property("payment_status_name", th.StringType),
-        th.Property("amount", th.NumberType),
+        th.Property("payment_amount", th.NumberType),
+        th.Property("invoice_sub_total", th.NumberType),
         th.Property("last_modified_date", th.DateTimeType),
     ).to_dict()
 
